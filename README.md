@@ -59,15 +59,15 @@ MSFramework contains the following classes
 * MSFramework.`MSDatabase`
 	* The main class for MSFramework.  By using this class you can interact with the full scope of MSFramework
 * MSFramework.`MSDataUploader`
-	* The data uploader class<br><br>MSDataUploader connects to a `URL`, sends a `POST` request containing the SQL statement to run, downloads **Success** or **Failure**, and returns a bool based upon that
+	* The data uploader class<br>MSDataUploader connects to a `URL`, sends a `POST` request containing the SQL statement to run, downloads **Success** or **Failure**, and returns a bool based upon that
 * MSFramework.`MSDataDownloader`
-	* The data downloader class<br><br>MSDataDownloader connects to a `URL`, sends a `POST` request, downloads JSON formatted data, then converts that data into an NSArray and returns it via a completionHandler
+	* The data downloader class<br>MSDataDownloader connects to a `URL`, sends a `POST` request, downloads JSON formatted data, then converts that data into an NSArray and returns it via a completionHandler
 * MSFramework.`MSSQL`
 	* Class for building an SQL formatted statement
 * MSFramework.`MSCoreDataStack`
 	* The CoreData class for MSDatabase
 * MSFramework.`MSNetworkActivityIndicatorManager`
-	* Displays the Network Activity Indicator when `showIndicator()` is called, and hides when `hideIndicator()` is called.<br><br>This class keeps track of the number of calls to prevent premature dismissing of the network indicator<br><br>**NOTE:** It is recommended your app uses this class to manage the Network Activity Indicator across the entire application as this class can prematurely dismiss the Network Activity Indicator
+	* Displays the Network Activity Indicator when `showIndicator()` is called, and hides when `hideIndicator()` is called.<br>This class keeps track of the number of calls to prevent premature dismissing of the network indicator<br>**NOTE:** It is recommended your app uses this class to manage the Network Activity Indicator across the entire application as this class can prematurely dismiss the Network Activity Indicator
 * MSFramework.`MSEncryption`
 	* The Objective-C Framework for encrypting data using an AES 256-bit algorithm
 
