@@ -15,7 +15,7 @@ Treat MSFramework as an opaque class
 
 Swift
 
-```ios
+```Swift
 class ProjectDatabase
 {
 	var msDatabaseObject = MSDatabase.sharedDatabase()
@@ -25,7 +25,7 @@ class ProjectDatabase
 
 Objective-C
 
-```ios
+```Objective-C
 #import <ProjectName-Swift.h>
 
 @interface ProjectDatabase : NSObject
