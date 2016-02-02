@@ -79,10 +79,16 @@ MSFramework has several variables for easy access and use.  These are located in
 
 
 * `readFile`: The relative path to a file in the URL that takes a `POST` object containing `databaseUserPass`, `websiteUserName`, and an `SQLStatement` and returns a JSON formatted object
+
 * `writeFile`: The relative path to a file in the URL that takes a `POST` object containing `databaseUserPass`, `websiteUserName`, and an `SQLStatement` and processes the `SQLStatement` returning **"Success"** if the SQLStatement is successfully ran or **"Failure"** if it fails
+
 * `websiteUserName`: If your URL is protected by `https` or is in a password protected directory, `websiteUserName` and `websiteUserPass` are used to login to the directory
+
 * `websiteUserPass`: If your URL is protected by `https` or is in a password protected directory, `websiteUserName` and `websiteUserPass` are used to login to the directory
+
 * `databaseUserPass`: MYSQL databases require user login and password to access the databse schema.  MSFramework assumes the login name is the same as `websiteUserName` combined with the password `databaseUserPass`
+
 * `coreDataModelName`: The file name of your project's CoreData model
+
 * `encryptionCode`: A String containing any number of characters (A-Z, a-z, 0-9 & special characters) that is used to encrypt and decrypt data on device
 	* This string is not visible outside MSFramework
