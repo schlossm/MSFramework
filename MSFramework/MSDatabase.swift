@@ -9,7 +9,7 @@
 import UIKit
 import CoreData
 
-private var MSDatabaseInstance : MSDatabase!
+private var MSDatabaseInstance = MSDatabase(fromSharedClassClass: nil)
 
 
 ///The main class for MSFramework.  By using this class you can interact with the full scope of MSFramework
@@ -45,6 +45,9 @@ private var MSDatabaseInstance : MSDatabase!
     ///The MSCoreDataStack object used by MSFramework.  Your application is free to pull upon this object to manage its own CoreData
     internal let msCoreDataStack = MSCoreDataStack()
     
+    ///The Downloaded Data Size formatter used by MSFramework
+    internal let msDataSizePrinter = MSDataSizePrinter()
+    
     internal static let msNetworkActivityIndicatorManager = MSNetworkActivityIndicatorManager()
     
     ///Convenience object for immediately calling the managedObjectContext
@@ -75,11 +78,6 @@ private var MSDatabaseInstance : MSDatabase!
     ///- Returns: A singleton MSDatabase object for use in your app
     class func sharedDatabase() -> MSDatabase
     {
-        if MSDatabaseInstance == nil
-        {
-            MSDatabaseInstance = MSDatabase(fromSharedClassClass: nil)
-        }
-        
         return MSDatabaseInstance
     }
 }
