@@ -14,48 +14,29 @@ import CoreData
 extension MSDatabase
 {
     ///The CoreData class for MSDatabase
-    class MSCoreDataStack: NSObject
+    class MSCoreDataStack
     {
-        ///Application Documents Directory URL
-        lazy private var applicationDocumentsDirectory: NSURL = {
-            let urls = NSFileManager.defaultManager().URLsForDirectory(.DocumentDirectory, inDomains: .UserDomainMask)
-            return urls[urls.count-1]
+        fileprivate var loaded = false
+        
+        lazy var persistentContainer: NSPersistentContainer =
+            {
+            let container = NSPersistentContainer(name: coreDataModelName)
+            container.loadPersistentStores(completionHandler: { (storeDescription, error) in
+                if let error = error as? NSError
+                {
+                    print("There's been an error loading the container! Error Details: \(error), \(error.userInfo)")
+                }
+                else
+                {
+                    self.loaded = true
+                }
+            })
+            return container
         }()
         
-        ///Managed Object Model for your CoreData model
-        lazy private var managedObjectModel: NSManagedObjectModel = {
-            let modelURL = NSBundle.mainBundle().URLForResource(coreDataModelName, withExtension: "momd")!
-            return NSManagedObjectModel(contentsOfURL: modelURL)!
-        }()
-        
-        ///The Persistent Store Coordinator.  This pulls up the SQL Database for CoreData
-        lazy private var persistentStoreCoordinator: NSPersistentStoreCoordinator = {
-            let coordinator = NSPersistentStoreCoordinator(managedObjectModel: self.managedObjectModel)
-            let url = self.applicationDocumentsDirectory.URLByAppendingPathComponent("SingleViewCoreData.sqlite")
-            var failureReason = "There was an error creating or loading the application's saved data."
-            let options = [NSMigratePersistentStoresAutomaticallyOption: true, NSInferMappingModelAutomaticallyOption: true]
-            do {
-                try coordinator.addPersistentStoreWithType(NSSQLiteStoreType, configuration: nil, URL: url, options: options)
-            } catch {
-                var dict = [String: AnyObject]()
-                dict[NSLocalizedDescriptionKey] = "Failed to initialize the application's saved data"
-                dict[NSLocalizedFailureReasonErrorKey] = failureReason
-                
-                dict[NSUnderlyingErrorKey] = error as NSError
-                let wrappedError = NSError(domain: "YOUR_ERROR_DOMAIN", code: 9999, userInfo: dict)
-                NSLog("Unresolved error \(wrappedError), \(wrappedError.userInfo)")
-                abort()
-            }
-            
-            return coordinator
-        }()
-        
-        ///The Managed Object Context.  This object contains the references to all the objects stored in CoreData
-        lazy var managedObjectContext: NSManagedObjectContext = {
-            let coordinator = self.persistentStoreCoordinator
-            var managedObjectContext = NSManagedObjectContext(concurrencyType: .MainQueueConcurrencyType)
-            managedObjectContext.persistentStoreCoordinator = coordinator
-            return managedObjectContext
+        lazy var managedObjectContext : NSManagedObjectContext? =
+            {
+                return self.loaded ? self.persistentContainer.viewContext : nil
         }()
     }
 }

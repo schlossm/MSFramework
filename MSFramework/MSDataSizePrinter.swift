@@ -10,14 +10,14 @@ import Foundation
 
 enum Size : NSInteger
 {
-    case B, KB, MB, GB, TB
+    case B, KB, MB, GB, TB, PB
 }
 
 extension MSDatabase
 {
     class MSDataSizePrinter
     {
-        func printDataSize(dataSize: Int)
+        func printSize(_ dataSize: Int)
         {
             var startSize = 0
             

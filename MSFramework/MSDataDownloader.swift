@@ -13,94 +13,107 @@ import UIKit
 
 extension MSDatabase
 {
-    ///The data downloader class<br><br>MSDataDownloader connects to a `URL`, sends a `POST` request, downloads JSON formatted data, then converts that data into an NSArray and returns it via a completionHandler
-    class MSDataDownloader: NSObject, NSURLSessionDelegate, NSURLSessionTaskDelegate
+    ///The data downloader class
+    ///
+    ///MSDataDownloader connects to a `URL`, sends a `POST` request, downloads JSON formatted data, then converts that data into an NSArray and returns it via a completionHandler
+    class MSDataDownloader: NSObject, URLSessionDelegate, URLSessionTaskDelegate
     {
-        private var downloadSession : NSURLSession!
+        private var downloadSession : Foundation.URLSession!
         
         override init()
         {
             super.init()
             
-            let urlSessionConfiguration = NSURLSessionConfiguration.defaultSessionConfiguration()
-            urlSessionConfiguration.HTTPMaximumConnectionsPerHost = 10
-            urlSessionConfiguration.HTTPAdditionalHeaders = ["Accept":"application/json"]
+            let urlSessionConfiguration = URLSessionConfiguration.default
+            urlSessionConfiguration.httpMaximumConnectionsPerHost = 10
+            urlSessionConfiguration.httpAdditionalHeaders = ["Accept":"application/json"]
             
-            downloadSession = NSURLSession(configuration: urlSessionConfiguration, delegate: self, delegateQueue: NSOperationQueue())
+            downloadSession = Foundation.URLSession(configuration: urlSessionConfiguration, delegate: self, delegateQueue: OperationQueue())
         }
         
-        ///Downloads JSON formatted data from `website`+`readFile`.<br><br>This method will return control to your application immediately, deferring call back to `completion`. `completion` will always be ran on the main thread
+        ///Downloads JSON formatted data from `website`+`readFile`.
+        ///
+        ///This method will return control to your application immediately, deferring call back to `completion`. `completion` will always be ran on the main thread
         ///- Parameter sqlStatement: an MSSQL object that contains a built SQL statement
-        ///- Parameter completion: A block to be called when all data has been downloaded.<br><br>`returnArray` will contain the data in iOS object format or will be `nil` is data wasn't downloaded successfully.<br><br>`error` will be nil if `returnArray` has information, otherwise will contain the corresponding error.
-        func downloadDataWithSQLStatement(sqlStatement: MSSQL, completion: (returnArray : NSArray?, error: NSError?) -> Void)
+        ///- Parameter completion: A block to be called when all data has been downloaded.
+        ///- Parameter returnArray: contains the data in iOS object format or will be `nil` is data wasn't downloaded successfully.
+        ///- Parameter error: nil if `returnArray` has information, otherwise will contain the corresponding error
+        func downloadDataWithSQLStatement(_ sqlStatement: MSSQL, completion: @escaping (_ returnArray : NSArray?, _ error: Error?) -> Void)
         {
-            let url = NSURL(string: website)!.URLByAppendingPathComponent(readFile)
+            let url = URL(string: website)!.appendingPathComponent(readFile)
             
-            let postData = "Password=\(databaseUserPass)&Username=\(websiteUserName)&SQLQuery=\(sqlStatement.prettySQLStatement)".dataUsingEncoding(NSASCIIStringEncoding, allowLossyConversion: true)
-            let postLength = String(postData!.length)
+            let postData = "Password=\(databaseUserPass)&Username=\(websiteUserName)&SQLQuery=\(sqlStatement.formattedStatement)".data(using: String.Encoding.ascii, allowLossyConversion: true)
+            let postLength = String(postData!.count)
             
-            let request = NSMutableURLRequest(URL: url)
-            request.HTTPMethod = "POST"
+            var request = URLRequest(url: url)
+            request.httpMethod = "POST"
             request.setValue(postLength, forHTTPHeaderField: "Content-Length")
             request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField:"Content-Type")
-            request.HTTPBody = postData
+            request.httpBody = postData
             
-           msNetworkActivityIndicatorManager.showIndicator()
+            MSDatabase.default.msNetworkActivityIndicatorManager.show()
             
-            let downloadRequest = downloadSession.dataTaskWithRequest(request) { (returnData, response, error) -> Void in
-                dispatch_async(dispatch_get_main_queue(), { () -> Void in
+            let downloadRequest = downloadSession.dataTask(with: request, completionHandler: { (returnData, response, error) in
+                DispatchQueue.main.async(execute: { () -> Void in
                     
-                    msNetworkActivityIndicatorManager.hideIndicator()
+                    debugLog("Response: \(response)")
+                    debugLog("Error: \(error)")
                     
-                    guard response?.URL?.absoluteString.hasPrefix(website) == true else { completion(returnArray: nil, error: NSError(domain: "com.Michael-Schloss.MSFramework.InvalidRedirect", code: 4, userInfo: nil)); return }
+                    MSDatabase.default.msNetworkActivityIndicatorManager.hide()
                     
-                    guard error == nil else { completion(returnArray: nil, error: error); return }
+                    guard response?.url?.absoluteString.hasPrefix(website) == true else { completion(nil, NSError(domain: "com.Michael-Schloss.MSFramework.InvalidRedirect", code: 4, userInfo: nil)); return }
                     
-                    guard returnData != nil else { completion(returnArray: nil, error: NSError(domain: "com.Michael-Schloss.MSFramework.NoReturnData", code: 2, userInfo: nil)); return }
+                    guard error == nil else { completion(nil, error); return }
                     
-                    guard let stringData = NSString(data: returnData!, encoding: NSASCIIStringEncoding) else { completion(returnArray: nil, error: NSError(domain: "com.Michael-Schloss.MSFramework.UnconvertableStringData", code: 3, userInfo: nil)); return }
+                    guard returnData != nil else { completion(nil, NSError(domain: "com.Michael-Schloss.MSFramework.NoReturnData", code: 2, userInfo: nil)); return }
                     
-                    guard stringData.containsString("No Data") == false else { completion(returnArray: nil, error: NSError(domain: "com.Michael-Schloss.MSFramework.NoData", code: 1, userInfo: nil)); return }
+                    guard let stringData = String(data: returnData!, encoding: String.Encoding.ascii) else { completion(nil, NSError(domain: "com.Michael-Schloss.MSFramework.UnconvertableStringData", code: 3, userInfo: nil)); return }
                     
-                    print("Downloaded Data Size: \(Double(returnData!.length)/1024.0) KB")
+                    debugLog("Return Data: \(stringData)")
+                    
+                    guard stringData.contains("No Data") == false else { completion(nil, NSError(domain: "com.Michael-Schloss.MSFramework.NoData", code: 1, userInfo: nil)); return }
+                    
+                    MSDatabase.default.msDataSizePrinter.printSize(returnData!.count)
                     
                     do
                     {
-                        let downloadedData = try NSJSONSerialization.JSONObjectWithData(returnData!, options: .AllowFragments) as! NSDictionary
+                        let downloadedData = try JSONSerialization.jsonObject(with: returnData!, options: .allowFragments) as! NSDictionary
                         
                         guard let returnArray = downloadedData["Data"] as? NSArray else
                         {
-                            completion(returnArray: nil, error: NSError(domain: "com.Michael-Schloss.MSFramework.InvalidJSONData" , code: 5, userInfo: nil))
+                            completion(nil, NSError(domain: "com.Michael-Schloss.MSFramework.InvalidJSONData" , code: 5, userInfo: nil))
                             return
                         }
                         
-                        completion(returnArray: returnArray, error: nil)
+                        completion(returnArray, nil)
                     }
                     catch
                     {
-                        completion(returnArray: nil, error: NSError(domain: "com.Michael-Schloss.MSFramework.InvalidJSONData" , code: 5, userInfo: nil));
+                        debugLog("Raw Dump:\n\n" + stringData + "\n\n")
+                        debugLog(error)
+                        completion(nil, NSError(domain: "com.Michael-Schloss.MSFramework.InvalidJSONData" , code: 5, userInfo: nil));
                         return
                     }
                 })
-            }
+            })
             
             downloadRequest.resume()
         }
         
         //MARK: - NSURLSessionDelegate
         
-        func URLSession(session: NSURLSession, didReceiveChallenge challenge: NSURLAuthenticationChallenge, completionHandler: (NSURLSessionAuthChallengeDisposition, NSURLCredential?) -> Void)
+        func urlSession(_ session: URLSession, didReceive challenge: URLAuthenticationChallenge, completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void)
         {
-            let credential = NSURLCredential(user: websiteUserName, password: websiteUserPass, persistence: NSURLCredentialPersistence.ForSession)
+            let credential = URLCredential(user: websiteUserName, password: websiteUserPass, persistence: URLCredential.Persistence.forSession)
             
-            completionHandler(NSURLSessionAuthChallengeDisposition.UseCredential, credential)
+            completionHandler(Foundation.URLSession.AuthChallengeDisposition.useCredential, credential)
         }
         
-        func URLSession(session: NSURLSession, task: NSURLSessionTask, didReceiveChallenge challenge: NSURLAuthenticationChallenge, completionHandler: (NSURLSessionAuthChallengeDisposition, NSURLCredential?) -> Void)
+        func urlSession(_ session: URLSession, task: URLSessionTask, didReceive challenge: URLAuthenticationChallenge, completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void)
         {
-            let credential = NSURLCredential(user: websiteUserName, password: websiteUserPass, persistence: NSURLCredentialPersistence.ForSession)
+            let credential = URLCredential(user: websiteUserName, password: websiteUserPass, persistence: URLCredential.Persistence.forSession)
             
-            completionHandler(NSURLSessionAuthChallengeDisposition.UseCredential, credential)
+            completionHandler(Foundation.URLSession.AuthChallengeDisposition.useCredential, credential)
         }
     }
 }

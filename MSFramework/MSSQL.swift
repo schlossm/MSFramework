@@ -8,248 +8,553 @@
 
 import UIKit
 
-enum MSSQLError : ErrorType
+//MARK: - enums
+
+enum MSSQLError : Error
 {
-    case WhereConditionCountsNotEquivelent, WhereConditionsCannotBeEmpty, ConditionAlreadyExists
+    case whereConditionCountsNotEquivelent, whereConditionsCannotBeEmpty, conditionAlreadyExists, cannotUseWildcardSpecifier, cannotUseEmptyValue, attributeLengthTooLong, conditionsMustBeEqual, unexpectedValueFound
 }
 
-///Class for building an SQL formatted statement.
-public class MSSQL
+enum MSSQLConjunction : String
 {
-    private var selectStatement : String!
-    private var fromStatement: String!
-    private var whereStatement : String!
-    private var joinStatement : String!
+    case and = " AND", or = " OR", none = " NONE"
+}
+
+enum MSSQLJoin : String
+{
+    case full = " FULL OUTER", natural = " NATURAL", left = " LEFT OUTER", right = " RIGHT OUTER", cross = " CROSS", inner = " INNER"
+}
+
+enum MSSQLEquivalence : String
+{
+    case equals = "=", notEquals = "!=", lessThan = "<", greaterThan = ">", lessThanOrEqual = "<=", greaterThanOrEqual = ">="
+}
+
+//MARK: - Helper structs
+
+struct MSSQLClause
+{
+    let leftHandSide    : String
+    let rightHandSide   : String
+}
+
+struct Join
+{
+    let table           : String
+    let leftHandSide    : String
+    let rightHandSide   : String
+}
+
+fileprivate struct InternalJoin
+{
+    let joinType    : MSSQLJoin
+    let table       : String
+    let clause      : MSSQLClause
+}
+
+struct Where
+{
+    let conjunction : MSSQLConjunction
+    let equivalence : MSSQLEquivalence
+    let clause      : MSSQLClause
+}
+
+//MARK: - SQL class
+
+class MSSQL
+{
+    private var selectRows          = [String]()
+    private var fromTables          = [String]()
+    private var joinStatements      = [InternalJoin]()
+    private var whereStatements     = [Where]()
     
-    private var rawSQLStatement: String!
+    private var insertRows          = [String]()
+    private var insertValues        = [String]()
     
-    var prettySQLStatement : String
+    private var updateStatements    = [MSSQLClause]()
+    private var appendedSQL         = [MSSQL]()
+    
+    var formattedStatement : String
         {
         get
         {
-            if rawSQLStatement != nil
-            {
-                return rawSQLStatement
-            }
-            
-            var returnStatement = "SELECT \(selectStatement) FROM `\(fromStatement)`"
-            
-            if joinStatement != nil
-            {
-                returnStatement += " \(joinStatement)"
-            }
-            
-            if whereStatement != nil
-            {
-                returnStatement += " WHERE \(whereStatement)"
-            }
-            
-            return returnStatement
+            return formatted()
         }
     }
     
-    init()
+    init() { }
+    
+    func append(sqlStatement : MSSQL)
     {
-        
+        guard appendedSQL.contains(where: { (sql) -> Bool in
+            return sql.formattedStatement == sqlStatement.formattedStatement
+        }) == false else { return }
+        appendedSQL.append(sqlStatement)
     }
     
-    ///Takes a raw SQL statment and disables appending statements
-    init(rawSQL: String)
+    private func formatted() -> String
     {
-        rawSQLStatement = rawSQL
+        var returnString = ""
         
-        selectStatement = "N/A"
-        fromStatement = "N/A"
-        whereStatement = "N/A"
-        joinStatement = "N/A"
-    }
-    
-    ///`SELECT` statement for multiple rows
-    ///- Parameter rows: An array of table rows
-    func select(rows: [String]) -> MSSQL
-    {
-        var rowsString = ""
-        for row in rows
+        
+        //WHERE statements
+        func insertWhereStatements()
         {
-            rowsString += "\(row),"
-        }
-        
-        rowsString = rowsString.stringByTrimmingCharactersInSet(NSCharacterSet(charactersInString: ", "))
-        selectStatement = rowsString
-        
-        return self
-    }
-    
-    ///Convenience `SELECT` statement for a single row
-    ///- Parameter row: A single row to be selected
-    func select(row: String) -> MSSQL
-    {
-        selectStatement = row
-        return self
-    }
-    
-    ///Convenience `SELECT` statement for all rows
-    func select() -> MSSQL
-    {
-        selectStatement = "*"
-        return self
-    }
-    
-    ///`FROM` statement for a Table
-    ///- Parameter table: The table to use to lookup row data
-    func from(table: String) -> MSSQL
-    {
-        fromStatement = table
-        
-        return self
-    }
-    
-    ///`WHERE` statement using `AND` as the joining operator
-    ///- Throws: `WhereConditionsCannotBeEmpty:`    Thrown if any of the arrays are empty<br><br>
-    ///`WhereConditionCountsNotEquivelent:`    Thrown if the arrays do not have the same number of entries<br><br>
-    ///`ConditionAlreadyExists:`    Thrown if a `WHERE` statement is already constructed
-    ///- Parameter lhs: The left hand conditions
-    ///- Parameter rhs: The right hand contitions
-    func whereAND(lhs: [String], _ rhs: [String]) throws -> MSSQL
-    {
-        guard self.whereStatement == nil else { throw MSSQLError.ConditionAlreadyExists }
-        guard lhs.isEmpty == false && rhs.isEmpty == false else { throw MSSQLError.WhereConditionsCannotBeEmpty }
-        guard lhs.count == rhs.count else { throw MSSQLError.WhereConditionCountsNotEquivelent }
-        
-        var whereStatement = "`\(lhs[0])`='\(rhs[0])' "
-        
-        if lhs.count > 1
-        {
-            for index in 1...(lhs.count - 1)
+            guard whereStatements.isEmpty == false else { return }
+            
+            returnString += " WHERE"
+            for whereStatement in whereStatements
             {
-                whereStatement += "AND `\(lhs[index])`='\(rhs[index])' "
+                let left = whereStatement.clause.leftHandSide
+                var right = whereStatement.clause.rightHandSide
+                
+                if right.contains(" ") || Int(right) == nil
+                {
+                    right = "'" + right + "'"
+                }
+                
+                returnString += " " + left + whereStatement.equivalence.rawValue + right
+                
+                if whereStatement.conjunction != .none
+                {
+                    returnString += whereStatement.conjunction.rawValue
+                }
             }
         }
         
-        self.whereStatement = whereStatement
         
-        return self
-    }
-    
-    ///`WHERE` statement using `OR` as the joining operator
-    ///- Throws: `WhereConditionsCannotBeEmpty:`    Thrown if any of the arrays are empty<br><br>
-    ///`WhereConditionCountsNotEquivelent:`    Thrown if the arrays do not have the same number of entries<br><br>
-    ///`ConditionAlreadyExists:`    Thrown if a `WHERE` statement is already constructed
-    ///- Parameter lhs: The left hand conditions
-    ///- Parameter rhs: The right hand contitions
-    func whereOR(lhs: [String], _ rhs: [String]) throws -> MSSQL
-    {
-        guard self.whereStatement == nil else { throw MSSQLError.ConditionAlreadyExists }
-        guard lhs.count == rhs.count else { throw MSSQLError.WhereConditionCountsNotEquivelent }
-        guard lhs.isEmpty == false && rhs.isEmpty == false else { throw MSSQLError.WhereConditionsCannotBeEmpty }
-        
-        var whereStatement = "`\(lhs[0])`='\(rhs[0])' "
-        
-        if lhs.count > 1
+        //APPENDED statements
+        func insertAppendedStatements()
         {
-            for index in 1...(lhs.count - 1)
+            guard appendedSQL.isEmpty == false else { return }
+            
+            for statement in appendedSQL
             {
-                whereStatement += "OR `\(lhs[index])`='\(rhs[index])' "
+                returnString += " " + statement.formatted()
             }
         }
         
-        self.whereStatement = whereStatement
         
+        //UPDATE statements
+        if updateStatements.isEmpty == false
+        {
+            guard fromTables.isEmpty == false && fromTables.count == 1 else { return returnString }
+            
+            returnString = "UPDATE `" + fromTables.first! + "` SET "
+            
+            for clause in updateStatements
+            {
+                let left = clause.leftHandSide
+                var right = clause.rightHandSide
+                
+                if right.contains(" ") || Int(right) == nil
+                {
+                    right = "'" + right + "'"
+                }
+                
+                returnString += left + "=" + right + ", "
+            }
+            
+            returnString = (returnString as NSString).substring(to: returnString.characters.count - 2)
+            
+            insertWhereStatements()
+            
+            returnString += ";"
+            
+            insertAppendedStatements()
+            
+            return returnString
+        }
+        
+        //INSERT STATEMENTS
+        if insertRows.isEmpty == false
+        {
+            guard fromTables.isEmpty == false && fromTables.count == 1 else { return returnString }
+            
+            returnString = "INSERT INTO `" + fromTables.first! + "`("
+            for row in insertRows
+            {
+                returnString += "`" + row + "`,"
+            }
+            
+            returnString = (returnString as NSString).substring(to: returnString.characters.count - 1) + ") VALUES ("
+            
+            for value in insertValues
+            {
+                if value.contains(" ") || Int(value) == nil
+                {
+                    returnString += "'" + value + "',"
+                }
+                else
+                {
+                    returnString += value + ","
+                }
+            }
+            
+            returnString = (returnString as NSString).substring(to: returnString.characters.count - 1) + ");"
+            
+            insertAppendedStatements()
+            
+            return returnString
+        }
+        
+        
+        //REST OF THE STUFF
+        guard selectRows.isEmpty == false else { return returnString }
+        
+        returnString = "SELECT "
+        for row in selectRows
+        {
+            returnString += "`" + row + "`,"
+        }
+        
+        returnString = (returnString as NSString).substring(to: returnString.characters.count - 1) + " FROM "
+        
+        for table in fromTables
+        {
+            returnString += "`" + table + "`,"
+        }
+        
+        returnString = (returnString as NSString).substring(to: returnString.characters.count - 1)
+        
+        if joinStatements.isEmpty == false
+        {
+            for join in joinStatements
+            {
+                let left = join.clause.leftHandSide
+                var right = join.clause.rightHandSide
+                
+                if right.contains(" ") || Int(right) == nil
+                {
+                    right = "'" + right + "'"
+                }
+                
+                returnString += join.joinType.rawValue + " JOIN `" + join.table + (join.joinType != .natural ? ("` ON `" + left + "=" + right) : "`")
+            }
+        }
+        
+        insertWhereStatements()
+        
+        returnString += ";"
+        
+        insertAppendedStatements()
+        
+        return returnString
+    }
+    
+    private func check(attribute: String) throws
+    {
+        if attribute.contains("*")          { throw MSSQLError.cannotUseWildcardSpecifier }
+        if attribute == ""                  { throw MSSQLError.cannotUseEmptyValue }
+        
+        switch attribute.contains(".")
+        {
+        case false:
+            if attribute.characters.count > 64  { throw MSSQLError.attributeLengthTooLong }
+            
+        case true:
+            let components = attribute.components(separatedBy: ".")
+            let table = components[0]
+            let row = components[1]
+            
+            if table.contains("`")
+            {
+                if table.characters.count > 66  { throw MSSQLError.attributeLengthTooLong }
+            }
+            else
+            {
+                if table.characters.count > 64  { throw MSSQLError.attributeLengthTooLong }
+            }
+            
+            if row.characters.count > 64  { throw MSSQLError.attributeLengthTooLong }
+        }
+    }
+    
+    private func check(value: String) throws
+    {
+        if value == "" { throw MSSQLError.cannotUseEmptyValue }
+    }
+    
+    //MARK: SELECT Constructors
+    
+    /**
+     * SELECT statement with 1 row
+     * - Parameter attribute: the attribute to request
+     * - Returns: An instance of `MSSQL`
+     * - Throws: `MSSQLError`: If no attribute specified, `*` is used, is empty, or is greater than 64 characters in length
+     */
+    func select(_ attribute: String) throws -> MSSQL
+    {
+        guard selectRows.isEmpty else { throw MSSQLError.conditionAlreadyExists }
+        try check(attribute: attribute)
+        
+        selectRows = [attribute]
+        
+        return self;
+    }
+    
+    /**
+     * SELECT statement with multiple rows
+     * - Parameter attributes: the attributes to request
+     * - Returns: An instance of `MSSQL`
+     * - Throws: `MSSQLError`: If no attributes specified, `*` is used, is empty, or any attribute greater than 64 characters in length
+     */
+    func select(_ attributes: [String]) throws -> MSSQL
+    {
+        guard selectRows.isEmpty else { throw MSSQLError.conditionAlreadyExists }
+        for attribute in attributes
+        {
+            try check(attribute: attribute)
+        }
+        
+        selectRows = attributes
         return self
     }
-
-    ///`WHERE` statement with single `=` comparator
-    ///- Throws: `ConditionAlreadyExists:`    Thrown if a `WHERE` statement is already constructed
-    ///- Parameter lhs: The left hand condition
-    ///- Parameter rhs: The right hand contition
-    func whereEquals(lhs: String, _ rhs: String) throws -> MSSQL
+    
+    //MARK: FROM Constructors
+    
+    /**
+     * FROM statement with one table
+     * - Parameter table: the table to request
+     * - Returns: An instance of `MSSQL`
+     * - Throws: `MSSQLError` If no table specified, `*` is used, is empty, or table is greater than 64 characters in length
+     */
+    func from(_ table: String) throws -> MSSQL
     {
-        guard self.whereStatement == nil else { throw MSSQLError.ConditionAlreadyExists }
-        whereStatement = "`\(lhs)`='\(rhs)'"
+        guard fromTables.isEmpty else { throw MSSQLError.conditionAlreadyExists }
+        
+        try check(attribute: table)
+        
+        fromTables = [table]
+        return self
+    }
+    
+    /**
+     * FROM statement with multiple tables
+     * - Parameter tables: the tables to request
+     * - Returns: An instance of `MSSQL`
+     * - Throws: `MSSQLError` If no tables specified, `*` is used, is empty, or if any table is greater than 64 characters in length
+     */
+    func from(_ tables: [String]) throws -> MSSQL
+    {
+        guard fromTables.isEmpty else { throw MSSQLError.conditionAlreadyExists }
+        
+        for table in tables
+        {
+            try check(attribute: table)
+        }
+        
+        fromTables = tables
+        return self
+    }
+    
+    //MARK: UPDATE SET Constructors
+    
+    /**
+     * UPDATE statement with one clause
+     * - Parameter table: The table to request
+     * - Parameter leftHandSide: The left hand side of the clause
+     * - Parameter rightHandSide: The right hand side of the clause
+     * - Returns: An instance of `MSSQL`
+     * - Throws: `MSSQLError` If a parameter is nil, already exists, `*` is used, is empty, or the `table` or `leftHandSide` is greater than 64 characters in length
+     */
+    func update(_ table: String, leftHandSide: String, rightHandSide: String) throws -> MSSQL
+    {
+        guard fromTables.isEmpty && updateStatements.isEmpty else { throw MSSQLError.conditionAlreadyExists }
+        
+        try check(attribute: table)
+        try check(attribute: leftHandSide)
+        try check(value: rightHandSide)
+        
+        fromTables = [table]
+        
+        updateStatements = [MSSQLClause(leftHandSide: leftHandSide, rightHandSide: rightHandSide)]
         
         return self
     }
     
-    ///Convenience `JOIN` Statement for `INNER JOIN`
-    ///- Throws: `ConditionAlreadyExists:`    Thrown if a `JOIN` statement is already constructed
-    ///- Parameter table: The table to join on
-    ///- Parameter firstCondition: The left hand contition
-    ///- Parameter secondCondition: The right hand contition
-    func joinON(table: String, onfirstCondition firstCondition: String, _ secondCondition: String) throws -> MSSQL
+    /**
+     * UPDATE statements with multiple clauses
+     * - Parameter table: The table to request
+     * - Parameter clauses: The clauses
+     * - Returns: An instance of `MSSQL`
+     * - Throws: `MSSQLError` If a parameter is nil, already exists, `*` is used, is empty, or the `table` or `leftHandSide` of any clause is greater than 64 characters in length
+     */
+    func update(_ table: String, set clauses: [MSSQLClause]) throws -> MSSQL
     {
-        guard joinStatement == nil else { throw MSSQLError.ConditionAlreadyExists }
         
-        joinStatement = "JOIN \(table) ON \(firstCondition)=\(secondCondition)"
+        guard fromTables.isEmpty && updateStatements.isEmpty else { throw MSSQLError.conditionAlreadyExists }
+        
+        try check(attribute: table)
+        for clause in clauses
+        {
+            try check(attribute: clause.leftHandSide)
+            try check(value: clause.rightHandSide)
+        }
+        
+        fromTables = [table]
+        updateStatements = clauses
+        
         return self
     }
     
-    ///`INNER JOIN` Statement
-    ///- Throws: `ConditionAlreadyExists:`    Thrown if a `JOIN` statement is already constructed
-    ///- Parameter table: The table to join on
-    ///- Parameter firstCondition: The left hand contition
-    ///- Parameter secondCondition: The right hand contition
-    func innerJoin(table: String, onfirstCondition firstCondition: String, _ secondCondition: String) throws -> MSSQL
+    //MARK: - INSERT INTO Constructor
+    
+    /**
+     * INSERT INTO statement
+     * - Parameter table: the table to insert into
+     * - Parameter values: the values for entry
+     * - Parameter attributes: the attributes to insert into
+     * - Returns: An instance of `MSSQL`
+     * - Throws `MSSQLError` If a parameter is null, already exists, values and attributes do not match in size, `*` is used, is empty, or any attribute or table is greater than 64 characters in length
+     */
+    func insert(_ table: String, values: [String], attributes: [String]) throws -> MSSQL
     {
-        guard joinStatement == nil else { throw MSSQLError.ConditionAlreadyExists }
+        guard fromTables.isEmpty && insertRows.isEmpty && insertValues.isEmpty else { throw MSSQLError.conditionAlreadyExists }
         
-        joinStatement = "INNER JOIN \(table) ON \(firstCondition)=\(secondCondition)"
+        try check(attribute: table)
+        for attribute in attributes
+        {
+            try check(attribute: attribute)
+        }
+        
+        for value in values
+        {
+            try check(value: value)
+        }
+        
+        fromTables = [table]
+        insertRows = attributes
+        insertValues = values
+        
         return self
     }
     
-    ///`LEFT JOIN` Statement
-    ///- Throws: `ConditionAlreadyExists:`    Thrown if a `JOIN` statement is already constructed
-    ///- Parameter table: The table to join on
-    ///- Parameter firstCondition: The left hand contition
-    ///- Parameter secondCondition: The right hand contition
-    func leftJoin(table: String, onfirstCondition firstCondition: String, _ secondCondition: String) throws -> MSSQL
+    //MARK: JOIN Constructors
+    
+    /**
+     * JOIN statement convenience method
+     * - Parameter table: the table to join on
+     * - Parameter leftHandSide: the left hand side of the clause
+     * - Parameter rightHandSide: the right hand side of the clause
+     * - Returns: An instance of `MSSQL`
+     * - Throws: `MSSQLError` If a parameter is null, already exists, `*` is used, is empty, or if the `table` or `leftHandSide` is greater than 64 characters in length
+     */
+    func join(_ join: MSSQLJoin, table: String, leftHandSide: String, rightHandSide: String) throws -> MSSQL
     {
-        guard joinStatement == nil else { throw MSSQLError.ConditionAlreadyExists }
+        guard joinStatements.isEmpty else { throw MSSQLError.conditionAlreadyExists }
         
-        joinStatement = "LEFT JOIN \(table) ON \(firstCondition)=\(secondCondition)"
+        try check(attribute: table)
+        try check(attribute: leftHandSide)
+        try check(value: rightHandSide)
+        
+        joinStatements = [InternalJoin(joinType: join, table: table, clause: MSSQLClause(leftHandSide: leftHandSide, rightHandSide: rightHandSide))]
+        
         return self
     }
     
-    ///`RIGHT JOIN` Statement
-    ///- Throws: `ConditionAlreadyExists:`    Thrown if a `JOIN` statement is already constructed
-    ///- Parameter table: The table to join on
-    ///- Parameter firstCondition: The left hand contition
-    ///- Parameter secondCondition: The right hand contition
-    func rightJoin(table: String, onfirstCondition firstCondition: String, _ secondCondition: String) throws -> MSSQL
+    /**
+     * JOIN statement convenience method
+     * - Parameter joins: The joins to make
+     * - Returns: An instance of `MSSQL`
+     * - Throws: `MSSQLError` If a parameter is null, already exists, `*` is used, is empty, or if the `table` or `leftHandSide` is greater than 64 characters in length
+     */
+    func join(_ join: MSSQLJoin, joins: [Join]) throws -> MSSQL
     {
-        guard joinStatement == nil else { throw MSSQLError.ConditionAlreadyExists }
+        guard joinStatements.isEmpty else { throw MSSQLError.conditionAlreadyExists }
         
-        joinStatement = "RIGHT JOIN \(table) ON \(firstCondition)=\(secondCondition)"
+        for join in joins
+        {
+            try check(attribute: join.table)
+            try check(attribute: join.leftHandSide)
+            try check(value: join.rightHandSide)
+        }
+        
+        for joinn in joins
+        {
+            joinStatements.append(InternalJoin(joinType: join, table: joinn.table, clause: MSSQLClause(leftHandSide: joinn.leftHandSide, rightHandSide: joinn.rightHandSide)))
+        }
+        
         return self
     }
     
-    ///`FULL JOIN` Statement
-    ///- Throws: `ConditionAlreadyExists:`    Thrown if a `JOIN` statement is already constructed
-    ///- Parameter table: The table to join on
-    ///- Parameter firstCondition: The left hand contition
-    ///- Parameter secondCondition: The right hand contition
-    func fullJoin(table: String, onfirstCondition firstCondition: String, _ secondCondition: String) throws -> MSSQL
+    //MARK: WHERE Constructors
+    
+    /**
+     * WHERE ...X... statement
+     * - Parameter equivalence: The equivalence of the statement
+     * - Parameter leftHandSide: The left hand side of the clause
+     * - Parameter rightHandSide: The right hand side of the clause
+     * - Returns: An instance of `MSSQL`
+     * - Throws: `MSSQLError` If a parameter is null, already exists, `*` is used, is empty, or the `table` or `leftHandSide` is greater than 64 characters in length
+     */
+    func `where`(_ equivalence: MSSQLEquivalence, leftHandSide: String, rightHandSide: String) throws -> MSSQL
     {
-        guard joinStatement == nil else { throw MSSQLError.ConditionAlreadyExists }
+        guard whereStatements.isEmpty else { throw MSSQLError.conditionAlreadyExists }
+        try check(attribute: leftHandSide)
+        try check(value: rightHandSide)
         
-        joinStatement = "FULL JOIN \(table) ON \(firstCondition)=\(secondCondition)"
+        whereStatements = [Where(conjunction: .none, equivalence: equivalence, clause: MSSQLClause(leftHandSide: leftHandSide, rightHandSide: rightHandSide))]
         
         return self
     }
-}
-
-func += (inout lhs: MSSQL, rhs: MSSQL)
-{
-    if lhs.prettySQLStatement == "SELECT nil FROM `nil`"
+    
+    /**
+     * WHERE ...X...[, ...X...] statement
+     * - Parameter equivalence: The equivalence of each statement
+     * - Parameter leftHandSide: The left hand side of the clause
+     * - Parameter rightHandSide: The right hand side of the clause
+     * - Returns: An instance of `MSSQL`
+     * - Throws: `MSSQLError` If a parameter is null, already exists, `*` is used, is empty, or the `table` or `leftHandSide` is greater than 64 characters in length
+     */
+    func `where`(_ `where`: MSSQLConjunction, equivalence: MSSQLEquivalence, leftHandSides: [String], rightHandSides: [String]) throws -> MSSQL
     {
-        lhs = MSSQL(rawSQL: "\(rhs.prettySQLStatement)")
+        guard whereStatements.isEmpty else { throw MSSQLError.conditionAlreadyExists }
+        guard leftHandSides.count == rightHandSides.count else { throw MSSQLError.conditionsMustBeEqual }
+        
+        for leftHandSide in leftHandSides
+        {
+            try check(attribute: leftHandSide)
+        }
+        for rightHandSide in rightHandSides
+        {
+            try check(value: rightHandSide)
+        }
+        
+        for index in 0..<leftHandSides.count - 1
+        {
+            let leftHandSide = leftHandSides[index]
+            let rightHandSide = rightHandSides[index]
+            
+            whereStatements.append(Where(conjunction: `where`, equivalence: equivalence, clause: MSSQLClause(leftHandSide: leftHandSide, rightHandSide: rightHandSide)))
+        }
+        
+        whereStatements.append(Where(conjunction: .none, equivalence: equivalence, clause: MSSQLClause(leftHandSide: leftHandSides[leftHandSides.count - 1], rightHandSide: rightHandSides[leftHandSides.count - 1])))
+        
+        return self
     }
-    else
+    
+    /**
+     * WHERE ...X...[, ...X...] statement
+     * - Parameter custom: A collection of `Where` structs.  The last `Where` struct **MUST** have `.none` as the conjunction
+     * - Returns: An instance of `MSSQL`
+     * - Throws: `MSSQLError` If a parameter is null, already exists, `*` is used, is empty, the `table` or `leftHandSide` is greater than 64 characters in length, or if the last `Where` struct does not have `.none` as its conjunction
+     */
+    func `where`(custom: [Where]) throws -> MSSQL
     {
-        lhs = MSSQL(rawSQL: "\(lhs.prettySQLStatement); \(rhs.prettySQLStatement)")
+        guard custom.isEmpty == false else { throw MSSQLError.cannotUseEmptyValue }
+        guard whereStatements.isEmpty else { throw MSSQLError.conditionAlreadyExists }
+        
+        for `where` in custom
+        {
+            try check(attribute: `where`.clause.leftHandSide)
+            try check(value: `where`.clause.rightHandSide)
+        }
+        
+        guard custom[custom.count - 1].conjunction == .none else { throw MSSQLError.unexpectedValueFound }
+        
+        whereStatements = custom
+        
+        return self
     }
-}
-
-func + (lhs: MSSQL, rhs: MSSQL) -> MSSQL
-{
-    return MSSQL(rawSQL: "\(lhs.prettySQLStatement); \(rhs.prettySQLStatement)")
 }

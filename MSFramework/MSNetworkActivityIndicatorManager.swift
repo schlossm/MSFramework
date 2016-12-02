@@ -15,7 +15,9 @@ import UIKit
 
 extension MSDatabase
 {
-    ///Displays the Network Activity Indicator when `showIndicator()` is called, and hides when `hideIndicator()` is called.<br><br>This class keeps track of the number of calls to prevent premature dismissing of the network indicator
+    ///Displays the Network Activity Indicator when `show()` is called, and hides when `hide()` is called.
+    ///
+    ///This class keeps track of the number of calls to prevent premature dismissing of the network indicator
     class MSNetworkActivityIndicatorManager: NSObject
     {
         private var numberOfActivityIndicatorRequests = 0
@@ -24,26 +26,26 @@ extension MSDatabase
             {
                 if numberOfActivityIndicatorRequests == 0
                 {
-                    UIApplication.sharedApplication().networkActivityIndicatorVisible = false
+                    UIApplication.shared.isNetworkActivityIndicatorVisible = false
                 }
                 else
                 {
-                    UIApplication.sharedApplication().networkActivityIndicatorVisible = true
+                    UIApplication.shared.isNetworkActivityIndicatorVisible = true
                 }
             }
         }
         
         ///Shows the Network Activity Indicator
-        ///- SeeAlso: `hideIndicator()`
-        func showIndicator()
+        ///- SeeAlso: `hide()`
+        func show()
         {
-            numberOfActivityIndicatorRequests++
+            numberOfActivityIndicatorRequests += 1
         }
         
         ///Hides the Network Activity Indicator
-        ///- Note: If multiple calls to `showIndicator()` have been made, the same number of calls must be made to this method to fully dismiss the Network Activity Indicator
-        ///- SeeAlso: `showIndicator()`
-        func hideIndicator()
+        ///- Note: If multiple calls to `show()` have been made, the same number of calls must be made to this method to fully dismiss the Network Activity Indicator
+        ///- SeeAlso: `show()`
+        func hide()
         {
             numberOfActivityIndicatorRequests = max(numberOfActivityIndicatorRequests - 1, 0)
         }

@@ -13,71 +13,71 @@ import UIKit
 
 extension MSDatabase
 {
-    ///The data uploader class<br><br>MSDataUploader connects to a `URL`, sends a `POST` request containing the SQL statement to run, downloads **Success** or **Failure**, and returns a bool based upon that
-    class MSDataUploader: NSObject, NSURLSessionDelegate
+    ///The data uploader class
+    ///
+    ///MSDataUploader connects to a `URL`, sends a `POST` request containing the SQL statement to run, downloads **Success** or **Failure**, and returns a bool based upon that
+    class MSDataUploader: NSObject, URLSessionDelegate
     {
-        private var uploadSession : NSURLSession!
+        private var uploadSession : Foundation.URLSession!
         
         override init()
         {
             super.init()
             
-            let urlSessionConfiguration = NSURLSessionConfiguration.defaultSessionConfiguration()
-            urlSessionConfiguration.HTTPMaximumConnectionsPerHost = 10
-            urlSessionConfiguration.HTTPAdditionalHeaders = ["Accept":"application/json"]
+            let urlSessionConfiguration = URLSessionConfiguration.default
+            urlSessionConfiguration.httpMaximumConnectionsPerHost = 10
+            urlSessionConfiguration.httpAdditionalHeaders = ["Accept":"application/json"]
             
-            uploadSession = NSURLSession(configuration: urlSessionConfiguration, delegate: self, delegateQueue: NSOperationQueue())
+            uploadSession = Foundation.URLSession(configuration: urlSessionConfiguration, delegate: self, delegateQueue: OperationQueue())
         }
         
-        ///Uploads an SQL statement to `website`+`writeFile`.<br><br>This method will return control to your application immediately, deferring call back to `completion`.  `completion` will always be ran on the main thread
+        ///Uploads an SQL statement to `website`+`writeFile`.
+        ///
+        ///This method will return control to your application immediately, deferring call back to `completion`.  `completion` will always be ran on the main thread
         ///- Parameter sqlStatement: an MSSQL object that contains a built SQL statement
-        ///- Parameter completion: A block to be called when `website`+`writeFile` has returned either **Success** or **Failure**.  The boolean will reflect which word was found
-        func uploadDataWithSQLStatement(sqlStatement: MSSQL, completion: (Bool) -> Void)
+        ///- Parameter completion: A block to be called when `website`+`writeFile` has returned either **Success** or **Failure**
+        func uploadDataWithSQLStatement(_ sqlStatement: MSSQL, completion: @escaping (Bool) -> Void)
         {
-            let url = NSURL(string: website)!.URLByAppendingPathComponent(writeFile)
+            let url = URL(string: website)!.appendingPathComponent(writeFile)
             
-            let postData = "Password=\(databaseUserPass)&Username=\(websiteUserName)&SQLQuery=\(sqlStatement.prettySQLStatement)".dataUsingEncoding(NSASCIIStringEncoding, allowLossyConversion: true)
-            let postLength = String(postData!.length)
+            let postData = "Password=\(databaseUserPass)&Username=\(websiteUserName)&SQLQuery=\(sqlStatement.formattedStatement)".data(using: String.Encoding.ascii, allowLossyConversion: true)
+            let postLength = String(postData!.count)
             
-            let request = NSMutableURLRequest(URL: url)
-            request.HTTPMethod = "POST"
+            var request = URLRequest(url: url)
+            request.httpMethod = "POST"
             request.setValue(postLength, forHTTPHeaderField: "Content-Length")
             request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField:"Content-Type")
-            request.HTTPBody = postData
+            request.httpBody = postData
             
-            msNetworkActivityIndicatorManager.showIndicator()
+            MSDatabase.default.msNetworkActivityIndicatorManager.show()
             
-            let uploadRequest = uploadSession.dataTaskWithRequest(request) { (returnData, response, error) -> Void in
-                dispatch_async(dispatch_get_main_queue(), { () -> Void in
+            let uploadRequest = uploadSession.dataTask(with: request, completionHandler: { (returnData, response, error) -> Void in
+                DispatchQueue.main.async(execute: { () -> Void in
                     
-                    msNetworkActivityIndicatorManager.hideIndicator()
+                    debugLog("Error: \(error!)")
+                    debugLog("Response: \(response!)")
+                    MSDatabase.default.msNetworkActivityIndicatorManager.hide()
                     
-                    guard response?.URL?.absoluteString.hasPrefix(website) == true else { completion(false); return }
+                    guard response?.url?.absoluteString.hasPrefix(website) == true else { completion(false); return }
                     guard error == nil && returnData != nil else { completion(false); return }
-                    guard let stringData = NSString(data: returnData!, encoding: NSASCIIStringEncoding) else { completion(false); return }
-                    guard stringData.containsString("Success") else { completion(false); return }
+                    guard let stringData = NSString(data: returnData!, encoding: String.Encoding.ascii.rawValue) else { completion(false); return }
+                    debugLog("Return Data: \(stringData)")
+                    guard stringData.contains("Success") else { completion(false); return }
                     
                     completion(true)
                 })
-            }
+            })
             
             uploadRequest.resume()
         }
         
         //MARK: - NSURLSessionDelegate
         
-        func URLSession(session: NSURLSession, didReceiveChallenge challenge: NSURLAuthenticationChallenge, completionHandler: (NSURLSessionAuthChallengeDisposition, NSURLCredential?) -> Void)
+        func urlSession(_ session: Foundation.URLSession, didReceive challenge: URLAuthenticationChallenge, completionHandler: @escaping (Foundation.URLSession.AuthChallengeDisposition, URLCredential?) -> Void)
         {
-            let credential = NSURLCredential(user: websiteUserName, password: websiteUserPass, persistence: NSURLCredentialPersistence.ForSession)
+            let credential = URLCredential(user: websiteUserName, password: websiteUserPass, persistence: URLCredential.Persistence.forSession)
             
-            completionHandler(NSURLSessionAuthChallengeDisposition.UseCredential, credential)
-        }
-        
-        func URLSession(session: NSURLSession, task: NSURLSessionTask, didReceiveChallenge challenge: NSURLAuthenticationChallenge, completionHandler: (NSURLSessionAuthChallengeDisposition, NSURLCredential?) -> Void)
-        {
-            let credential = NSURLCredential(user: websiteUserName, password: websiteUserPass, persistence: NSURLCredentialPersistence.ForSession)
-            
-            completionHandler(NSURLSessionAuthChallengeDisposition.UseCredential, credential)
+            completionHandler(Foundation.URLSession.AuthChallengeDisposition.useCredential, credential)
         }
     }
 }
