@@ -1,44 +1,42 @@
 //
 //  MSSQL.swift
-//  NicholsApp
+//  MSFramework
 //
-//  Created by Michael Schloss on 6/27/15.
-//  Copyright © 2015 Michael Schloss. All rights reserved.
+//  Created by Michael Schloss on 12/25/16.
+//  Copyright © 2016 Michael Schloss. All rights reserved.
 //
-
-import UIKit
 
 //MARK: - enums
 
-enum MSSQLError : Error
+public enum MSSQLError : Error
 {
     case whereConditionCountsNotEquivelent, whereConditionsCannotBeEmpty, conditionAlreadyExists, cannotUseWildcardSpecifier, cannotUseEmptyValue, attributeLengthTooLong, conditionsMustBeEqual, unexpectedValueFound
 }
 
-enum MSSQLConjunction : String
+public enum MSSQLConjunction : String
 {
     case and = " AND", or = " OR", none = " NONE"
 }
 
-enum MSSQLJoin : String
+public enum MSSQLJoin : String
 {
     case full = " FULL OUTER", natural = " NATURAL", left = " LEFT OUTER", right = " RIGHT OUTER", cross = " CROSS", inner = " INNER"
 }
 
-enum MSSQLEquivalence : String
+public enum MSSQLEquivalence : String
 {
     case equals = "=", notEquals = "!=", lessThan = "<", greaterThan = ">", lessThanOrEqual = "<=", greaterThanOrEqual = ">="
 }
 
 //MARK: - Helper structs
 
-struct MSSQLClause
+public struct MSSQLClause
 {
     let leftHandSide    : String
     let rightHandSide   : String
 }
 
-struct Join
+public struct Join
 {
     let table           : String
     let leftHandSide    : String
@@ -52,7 +50,7 @@ fileprivate struct InternalJoin
     let clause      : MSSQLClause
 }
 
-struct Where
+public struct Where
 {
     let conjunction : MSSQLConjunction
     let equivalence : MSSQLEquivalence
@@ -61,7 +59,7 @@ struct Where
 
 //MARK: - SQL class
 
-class MSSQL
+public final class MSSQL
 {
     private var selectRows          = [String]()
     private var fromTables          = [String]()
@@ -75,16 +73,13 @@ class MSSQL
     private var appendedSQL         = [MSSQL]()
     
     var formattedStatement : String
-        {
-        get
-        {
-            return formatted()
-        }
+    {
+        return formatted()
     }
     
-    init() { }
+    public init() { }
     
-    func append(sqlStatement : MSSQL)
+    public func append(_ sqlStatement : MSSQL)
     {
         guard appendedSQL.contains(where: { (sql) -> Bool in
             return sql.formattedStatement == sqlStatement.formattedStatement
@@ -278,12 +273,12 @@ class MSSQL
     //MARK: SELECT Constructors
     
     /**
-     * SELECT statement with 1 row
-     * - Parameter attribute: the attribute to request
-     * - Returns: An instance of `MSSQL`
-     * - Throws: `MSSQLError`: If no attribute specified, `*` is used, is empty, or is greater than 64 characters in length
+     SELECT statement with 1 row
+     - Parameter attribute: the attribute to request
+     - Returns: An instance of `MSSQL`
+     - Throws: `MSSQLError`: If no attribute specified, `*` is used, is empty, or is greater than 64 characters in length
      */
-    func select(_ attribute: String) throws -> MSSQL
+    public func select(_ attribute: String) throws -> MSSQL
     {
         guard selectRows.isEmpty else { throw MSSQLError.conditionAlreadyExists }
         try check(attribute: attribute)
@@ -294,12 +289,12 @@ class MSSQL
     }
     
     /**
-     * SELECT statement with multiple rows
-     * - Parameter attributes: the attributes to request
-     * - Returns: An instance of `MSSQL`
-     * - Throws: `MSSQLError`: If no attributes specified, `*` is used, is empty, or any attribute greater than 64 characters in length
+     SELECT statement with multiple rows
+     - Parameter attributes: the attributes to request
+     - Returns: An instance of `MSSQL`
+     - Throws: `MSSQLError`: If no attributes specified, `*` is used, is empty, or any attribute is greater than 64 characters in length
      */
-    func select(_ attributes: [String]) throws -> MSSQL
+    public func select(_ attributes: [String]) throws -> MSSQL
     {
         guard selectRows.isEmpty else { throw MSSQLError.conditionAlreadyExists }
         for attribute in attributes
@@ -314,12 +309,12 @@ class MSSQL
     //MARK: FROM Constructors
     
     /**
-     * FROM statement with one table
-     * - Parameter table: the table to request
-     * - Returns: An instance of `MSSQL`
-     * - Throws: `MSSQLError` If no table specified, `*` is used, is empty, or table is greater than 64 characters in length
+     FROM statement with one table
+     - Parameter table: the table to request
+     - Returns: An instance of `MSSQL`
+     - Throws: `MSSQLError` If no table specified, `*` is used, is empty, or table is greater than 64 characters in length
      */
-    func from(_ table: String) throws -> MSSQL
+    public func from(_ table: String) throws -> MSSQL
     {
         guard fromTables.isEmpty else { throw MSSQLError.conditionAlreadyExists }
         
@@ -330,12 +325,12 @@ class MSSQL
     }
     
     /**
-     * FROM statement with multiple tables
-     * - Parameter tables: the tables to request
-     * - Returns: An instance of `MSSQL`
-     * - Throws: `MSSQLError` If no tables specified, `*` is used, is empty, or if any table is greater than 64 characters in length
+     FROM statement with multiple tables
+     - Parameter tables: the tables to request
+     - Returns: An instance of `MSSQL`
+     - Throws: `MSSQLError` If no tables specified, `*` is used, is empty, or if any table is greater than 64 characters in length
      */
-    func from(_ tables: [String]) throws -> MSSQL
+    public func from(_ tables: [String]) throws -> MSSQL
     {
         guard fromTables.isEmpty else { throw MSSQLError.conditionAlreadyExists }
         
@@ -351,14 +346,14 @@ class MSSQL
     //MARK: UPDATE SET Constructors
     
     /**
-     * UPDATE statement with one clause
-     * - Parameter table: The table to request
-     * - Parameter leftHandSide: The left hand side of the clause
-     * - Parameter rightHandSide: The right hand side of the clause
-     * - Returns: An instance of `MSSQL`
-     * - Throws: `MSSQLError` If a parameter is nil, already exists, `*` is used, is empty, or the `table` or `leftHandSide` is greater than 64 characters in length
+     UPDATE statement with one clause
+     - Parameter table: The table to request
+     - Parameter leftHandSide: The left hand side of the clause
+     - Parameter rightHandSide: The right hand side of the clause
+     - Returns: An instance of `MSSQL`
+     - Throws: `MSSQLError` If a parameter is nil, already exists, `*` is used, is empty, or the `table` | `leftHandSide` is greater than 64 characters in length
      */
-    func update(_ table: String, leftHandSide: String, rightHandSide: String) throws -> MSSQL
+    public func update(_ table: String, leftHandSide: String, rightHandSide: String) throws -> MSSQL
     {
         guard fromTables.isEmpty && updateStatements.isEmpty else { throw MSSQLError.conditionAlreadyExists }
         
@@ -374,13 +369,13 @@ class MSSQL
     }
     
     /**
-     * UPDATE statements with multiple clauses
-     * - Parameter table: The table to request
-     * - Parameter clauses: The clauses
-     * - Returns: An instance of `MSSQL`
-     * - Throws: `MSSQLError` If a parameter is nil, already exists, `*` is used, is empty, or the `table` or `leftHandSide` of any clause is greater than 64 characters in length
+     UPDATE statements with multiple clauses
+     - Parameter table: The table to request
+     - Parameter clauses: The clauses
+     - Returns: An instance of `MSSQL`
+     - Throws: `MSSQLError` If a parameter is nil, already exists, `*` is used, is empty, or the `table` | `leftHandSide` of any clause is greater than 64 characters in length
      */
-    func update(_ table: String, set clauses: [MSSQLClause]) throws -> MSSQL
+    public func update(_ table: String, set clauses: [MSSQLClause]) throws -> MSSQL
     {
         
         guard fromTables.isEmpty && updateStatements.isEmpty else { throw MSSQLError.conditionAlreadyExists }
@@ -398,17 +393,17 @@ class MSSQL
         return self
     }
     
-    //MARK: - INSERT INTO Constructor
+    //MARK: INSERT INTO Constructor
     
     /**
-     * INSERT INTO statement
-     * - Parameter table: the table to insert into
-     * - Parameter values: the values for entry
-     * - Parameter attributes: the attributes to insert into
-     * - Returns: An instance of `MSSQL`
-     * - Throws `MSSQLError` If a parameter is null, already exists, values and attributes do not match in size, `*` is used, is empty, or any attribute or table is greater than 64 characters in length
+     INSERT INTO statement
+     - Parameter table: the table to insert into
+     - Parameter values: the values for entry
+     - Parameter attributes: the attributes to insert into
+     - Returns: An instance of `MSSQL`
+     - Throws `MSSQLError` If a parameter is null, already exists, values and attributes do not match in size, `*` is used, is empty, or any attribute | table is greater than 64 characters in length
      */
-    func insert(_ table: String, values: [String], attributes: [String]) throws -> MSSQL
+    public func insert(_ table: String, values: [String], attributes: [String]) throws -> MSSQL
     {
         guard fromTables.isEmpty && insertRows.isEmpty && insertValues.isEmpty else { throw MSSQLError.conditionAlreadyExists }
         
@@ -433,14 +428,14 @@ class MSSQL
     //MARK: JOIN Constructors
     
     /**
-     * JOIN statement convenience method
-     * - Parameter table: the table to join on
-     * - Parameter leftHandSide: the left hand side of the clause
-     * - Parameter rightHandSide: the right hand side of the clause
-     * - Returns: An instance of `MSSQL`
-     * - Throws: `MSSQLError` If a parameter is null, already exists, `*` is used, is empty, or if the `table` or `leftHandSide` is greater than 64 characters in length
+     JOIN statement convenience method
+     - Parameter table: the table to join on
+     - Parameter leftHandSide: the left hand side of the clause
+     - Parameter rightHandSide: the right hand side of the clause
+     - Returns: An instance of `MSSQL`
+     - Throws: `MSSQLError` If a parameter is null, already exists, `*` is used, is empty, or if the `table` | `leftHandSide` is greater than 64 characters in length
      */
-    func join(_ join: MSSQLJoin, table: String, leftHandSide: String, rightHandSide: String) throws -> MSSQL
+    public func join(_ join: MSSQLJoin, table: String, leftHandSide: String, rightHandSide: String) throws -> MSSQL
     {
         guard joinStatements.isEmpty else { throw MSSQLError.conditionAlreadyExists }
         
@@ -454,12 +449,12 @@ class MSSQL
     }
     
     /**
-     * JOIN statement convenience method
-     * - Parameter joins: The joins to make
-     * - Returns: An instance of `MSSQL`
-     * - Throws: `MSSQLError` If a parameter is null, already exists, `*` is used, is empty, or if the `table` or `leftHandSide` is greater than 64 characters in length
+     JOIN statement convenience method
+     - Parameter joins: The joins to make
+     - Returns: An instance of `MSSQL`
+     - Throws: `MSSQLError` If a parameter is null, already exists, `*` is used, is empty, or if the `table` | `leftHandSide` of any `Join` is greater than 64 characters in length
      */
-    func join(_ join: MSSQLJoin, joins: [Join]) throws -> MSSQL
+    public func join(_ join: MSSQLJoin, joins: [Join]) throws -> MSSQL
     {
         guard joinStatements.isEmpty else { throw MSSQLError.conditionAlreadyExists }
         
@@ -481,14 +476,14 @@ class MSSQL
     //MARK: WHERE Constructors
     
     /**
-     * WHERE ...X... statement
-     * - Parameter equivalence: The equivalence of the statement
-     * - Parameter leftHandSide: The left hand side of the clause
-     * - Parameter rightHandSide: The right hand side of the clause
-     * - Returns: An instance of `MSSQL`
-     * - Throws: `MSSQLError` If a parameter is null, already exists, `*` is used, is empty, or the `table` or `leftHandSide` is greater than 64 characters in length
+     WHERE ...X... statement
+     - Parameter equivalence: The equivalence of the statement
+     - Parameter leftHandSide: The left hand side of the clause
+     - Parameter rightHandSide: The right hand side of the clause
+     - Returns: An instance of `MSSQL`
+     - Throws: `MSSQLError` If a parameter is null, already exists, `*` is used in an attribute, is empty, or the `leftHandSide` is greater than 64 characters in length
      */
-    func `where`(_ equivalence: MSSQLEquivalence, leftHandSide: String, rightHandSide: String) throws -> MSSQL
+    public func `where`(_ equivalence: MSSQLEquivalence, leftHandSide: String, rightHandSide: String) throws -> MSSQL
     {
         guard whereStatements.isEmpty else { throw MSSQLError.conditionAlreadyExists }
         try check(attribute: leftHandSide)
@@ -500,14 +495,14 @@ class MSSQL
     }
     
     /**
-     * WHERE ...X...[, ...X...] statement
-     * - Parameter equivalence: The equivalence of each statement
-     * - Parameter leftHandSide: The left hand side of the clause
-     * - Parameter rightHandSide: The right hand side of the clause
-     * - Returns: An instance of `MSSQL`
-     * - Throws: `MSSQLError` If a parameter is null, already exists, `*` is used, is empty, or the `table` or `leftHandSide` is greater than 64 characters in length
+     WHERE ...X...[, ...X...] statement
+     - Parameter equivalence: The equivalence of each statement
+     - Parameter leftHandSide: The left hand side of the clause
+     - Parameter rightHandSide: The right hand side of the clause
+     - Returns: An instance of `MSSQL`
+     - Throws: `MSSQLError` If a parameter is null, already exists, `*` is used in an attribute, is empty, or any `leftHandSide` is greater than 64 characters in length
      */
-    func `where`(_ `where`: MSSQLConjunction, equivalence: MSSQLEquivalence, leftHandSides: [String], rightHandSides: [String]) throws -> MSSQL
+    public func `where`(_ `where`: MSSQLConjunction, equivalence: MSSQLEquivalence, leftHandSides: [String], rightHandSides: [String]) throws -> MSSQL
     {
         guard whereStatements.isEmpty else { throw MSSQLError.conditionAlreadyExists }
         guard leftHandSides.count == rightHandSides.count else { throw MSSQLError.conditionsMustBeEqual }
@@ -535,12 +530,12 @@ class MSSQL
     }
     
     /**
-     * WHERE ...X...[, ...X...] statement
-     * - Parameter custom: A collection of `Where` structs.  The last `Where` struct **MUST** have `.none` as the conjunction
-     * - Returns: An instance of `MSSQL`
-     * - Throws: `MSSQLError` If a parameter is null, already exists, `*` is used, is empty, the `table` or `leftHandSide` is greater than 64 characters in length, or if the last `Where` struct does not have `.none` as its conjunction
+     WHERE ...X...[, ...X...] statement
+     - Parameter custom: A collection of `Where` structs.  The last `Where` struct **MUST** have `.none` as the conjunction
+     - Returns: An instance of `MSSQL`
+     - Throws: `MSSQLError` If a parameter is null, already exists, `*` is used as the `table` or `leftHandSide` parameter of any `Where`, is empty, any `leftHandSide` is greater than 64 characters in length, or if the last `Where` struct does not have `.none` as its conjunction
      */
-    func `where`(custom: [Where]) throws -> MSSQL
+    public func `where`(custom: [Where]) throws -> MSSQL
     {
         guard custom.isEmpty == false else { throw MSSQLError.cannotUseEmptyValue }
         guard whereStatements.isEmpty else { throw MSSQLError.conditionAlreadyExists }
