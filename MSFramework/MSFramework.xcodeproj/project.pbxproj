@@ -269,8 +269,8 @@
 				10166D701E101C8F00627A76 /* MSFrameworkManager.swift */,
 				10166D711E101C8F00627A76 /* MSDatabaseDataSource.swift */,
 				10166D721E101C8F00627A76 /* MSDataDownloader.swift */,
-				10166D731E101C8F00627A76 /* MSDataSizePrinter.swift */,
 				10166D741E101C8F00627A76 /* MSDataUploader.swift */,
+				10166D731E101C8F00627A76 /* MSDataSizePrinter.swift */,
 				10166D761E101C8F00627A76 /* MSSQL.swift */,
 				10166D211E101C6B00627A76 /* MSFramework.h */,
 			);

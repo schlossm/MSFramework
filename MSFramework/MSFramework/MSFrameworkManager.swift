@@ -19,7 +19,7 @@ public typealias MSFrameworkDownloadCompletion  = (_ returnData: [Any]?,_ error:
 /**
  The upload Completion Handler
  
- - Parameter success: Whether the upload failed or successed
+ - Parameter success: Whether the upload failed or succeeded
  */
 public typealias MSFrameworkUploadCompletion    = (_ success: Bool)                         -> Void
 
@@ -57,7 +57,7 @@ public final class MSFrameworkManager : NSObject
     }
     
     
-    ///Grabs the singleton object of MSDatabase
+    ///Grabs the singleton object of MSFrameworkManager
     public static let `default` : MSFrameworkManager = MSFrameworkManager()
     
     ///Call this method to enable debugging mode
@@ -119,7 +119,7 @@ extension MSFrameworkManager
     }
     
     ///Decrypts an AES 256-bit encrypted object
-    ///- Parameter encryptedString: The HEX String returned from `encrypt(object:)`
+    ///- Parameter object: The HEX String returned from `encrypt(object:)`
     ///- Returns: A decrypted object or nil if the string isn't an encrypted object
     public func decrypt(object: String) -> Any?
     {
@@ -144,7 +144,7 @@ extension MSFrameworkManager
 extension MSFrameworkManager
 {
     /**
-     Conveience method to list all the entities' values of an attribute for the entity name.
+     Conveience method to list all the entities' values of an attribute for the entity name
      
      - Parameter attribute: The attribute to recall values from
      - Parameter entity: The entity name to search in.  Looks only at on-device stored data

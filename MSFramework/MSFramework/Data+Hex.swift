@@ -27,9 +27,7 @@ extension String
             data.append(&num, count: 1)
         }
         
-        guard data.count > 0 else {
-            return nil
-        }
+        guard data.count > 0 else { return nil }
         
         return data
     }

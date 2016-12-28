@@ -27,8 +27,8 @@ public final class MSDataDownloader: NSObject, URLSessionDelegate, URLSessionTas
     ///Downloads JSON formatted data from `website`+`readFile`.
     ///
     ///This method will return control to your application immediately, deferring call back to `completion`. `completion` will always be ran on the main thread
-    ///- Parameter sqlStatement: an MSSQL object that contains a built SQL statement
-    ///- Parameter completion: A block to be called when all data has been downloaded.
+    ///- Parameter sqlStatement: An MSSQL object that contains a built SQL statement
+    ///- Parameter completion: A block to be called when all data has been downloaded
     public func download(sqlStatement: MSSQL, completion: @escaping MSFrameworkDownloadCompletion)
     {
         guard MSFrameworkManager.default.dataSource != nil else { fatalError("You must set a dataSource before querying any MSDatabase functionality.") }
@@ -93,7 +93,7 @@ public final class MSDataDownloader: NSObject, URLSessionDelegate, URLSessionTas
     public func urlSession(_ session: URLSession, didReceive challenge: URLAuthenticationChallenge, completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void)
     {
         guard MSFrameworkManager.default.dataSource != nil else { fatalError("You must set a dataSource before querying any MSDatabase functionality.") }
-        let credential = URLCredential(user: MSFrameworkManager.default.dataSource.websiteUserName, password: MSFrameworkManager.default.dataSource.websiteUserPass, persistence: URLCredential.Persistence.forSession)
+        let credential = URLCredential(user: MSFrameworkManager.default.dataSource.websiteUserName!, password: MSFrameworkManager.default.dataSource.websiteUserPass!, persistence: URLCredential.Persistence.forSession)
         
         completionHandler(.useCredential, credential)
     }
@@ -101,7 +101,7 @@ public final class MSDataDownloader: NSObject, URLSessionDelegate, URLSessionTas
     public func urlSession(_ session: URLSession, task: URLSessionTask, didReceive challenge: URLAuthenticationChallenge, completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void)
     {
         guard MSFrameworkManager.default.dataSource != nil else { fatalError("You must set a dataSource before querying any MSDatabase functionality.") }
-        let credential = URLCredential(user: MSFrameworkManager.default.dataSource.websiteUserName, password: MSFrameworkManager.default.dataSource.websiteUserPass, persistence: URLCredential.Persistence.forSession)
+        let credential = URLCredential(user: MSFrameworkManager.default.dataSource.websiteUserName!, password: MSFrameworkManager.default.dataSource.websiteUserPass!, persistence: URLCredential.Persistence.forSession)
         
         completionHandler(.useCredential, credential)
     }

@@ -1,6 +1,6 @@
 //
 //  MSDatabaseDataSource.swift
-//  MSFramework2
+//  MSFramework
 //
 //  Created by Michael Schloss on 12/24/16.
 //  Copyright © 2016 Michael Schloss. All rights reserved.
@@ -9,24 +9,45 @@
 @available(*, deprecated: 10.0, renamed: "MSFrameworkDataSource")
 public typealias MSDatabaseDataSource = MSFrameworkDataSource
 
-public protocol MSFrameworkDataSource
+/**
+ Used by MSFamework to covert a table and its attributes to its corresponding CoreData entities and attributes
+ 
+ One instance per table/entity.  Required to be a `class` to maintain compatibility with Objective-C
+ */
+@objc public class MySQLToCoreData : NSObject
+{
+    @objc var databaseTableName : String!
+    @objc var coreDataTableName : String!
+    
+    /**
+     Used by MSFramework to convert downloaded table attributes to CoreData Entity's attributes.
+     
+     **Format**
+     
+     
+     `["downloadedAName":"CDAttributeName"]`
+     */
+    @objc var attributesToCDAttributes : [String : String]!
+}
+
+@objc public protocol MSFrameworkDataSource
 {
     ///The username to log into a protected directory.  This value is only used if needed.
-    var websiteUserName     : String { get }
+    @objc optional var websiteUserName     : String { get }
     
     ///The password to log into a protected directory.  This value is only used if needed.
-    var websiteUserPass     : String { get }
+    @objc optional var websiteUserPass     : String { get }
     
     ///MySQL databases require user login and password to access the databse schema.  MSFramework assumes the login `websiteUserName` combined with this password
-    var databaseUserPass    : String { get }
+    @objc optional var databaseUserPass    : String { get }
     
     
     ///The file name of your project's CoreData model
-    var coreDataModelName   : String { get }
+    @objc var coreDataModelName   : String { get }
     
     
     ///The base URL the application will be communicating with
-    var website             : String { get }
+    @objc var website             : String { get }
     
     /**
      The relative path to a file in the URL that takes a `POST` object containing `databaseUserPass`, `websiteUserName`, and an SQL statement and returns a JSON formatted object
@@ -36,7 +57,7 @@ public protocol MSFrameworkDataSource
      * `Username`
      * `SQLStatement`
      */
-    var readFile            : String { get }
+    @objc var readFile            : String { get }
     
     /**
      The relative path to a file in the URL that takes a `POST` object containing `databaseUserPass`, `websiteUserName`, and an SQL statement and processes the SQL statement returning **"Success"** if the SQLStatement is successfully ran or **"Failure"** if it fails
@@ -46,12 +67,19 @@ public protocol MSFrameworkDataSource
      * `Username`
      * `SQLStatement`
      */
-    var writeFile           : String { get }
+    @objc var writeFile           : String { get }
     
     
     ///A String containing 32 characters ([A-Za-z0-9] & special characters) that is used to encrypt and decrypt data on device
-    var encryptionCode      : String { get }
+    @objc var encryptionCode      : String { get }
     
-    //The Initialization Vector for encryption.  Should be exactly 16 characters in length
-    var iv                  : String { get }
+    ///The Initialization Vector for encryption.  Should be exactly 16 characters in length
+    @objc var iv                  : String { get }
+    
+    /**
+     Used by MSFramework to convert between downloaded MySQL table structure and internal CoreData structure
+     
+     MSFramework only calls upon this variable when it cannot automatically determine the CoreData table name.
+     */
+    @objc optional var databaseToCoreDataInfo  : [MySQLToCoreData] { get }
 }

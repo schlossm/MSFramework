@@ -61,16 +61,16 @@ public struct Where
 
 public final class MSSQL
 {
-    private var selectRows          = [String]()
-    private var fromTables          = [String]()
-    private var joinStatements      = [InternalJoin]()
-    private var whereStatements     = [Where]()
+    private     var selectRows          = [String]()
+    internal    var fromTables          = [String]()
+    private     var joinStatements      = [InternalJoin]()
+    private     var whereStatements     = [Where]()
     
-    private var insertRows          = [String]()
-    private var insertValues        = [String]()
+    private     var insertRows          = [String]()
+    private     var insertValues        = [String]()
     
-    private var updateStatements    = [MSSQLClause]()
-    private var appendedSQL         = [MSSQL]()
+    private     var updateStatements    = [MSSQLClause]()
+    internal    var appendedSQL         = [MSSQL]()
     
     var formattedStatement : String
     {
@@ -397,9 +397,9 @@ public final class MSSQL
     
     /**
      INSERT INTO statement
-     - Parameter table: the table to insert into
+     - Parameter table: the table to insert the new row into
      - Parameter values: the values for entry
-     - Parameter attributes: the attributes to insert into
+     - Parameter attributes: the attributes to set
      - Returns: An instance of `MSSQL`
      - Throws `MSSQLError` If a parameter is null, already exists, values and attributes do not match in size, `*` is used, is empty, or any attribute | table is greater than 64 characters in length
      */

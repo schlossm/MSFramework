@@ -24,6 +24,6 @@ class MSDataSizePrinter
             length /= 1024.0
         }
         
-        print("Downloaded Data Size: \(String(format: "%.2f", length)) \(Size(rawValue: startSize)!)")
+        print("Downloaded Data Size: \(String(format: "%.2f", length))\(Size(rawValue: startSize)!)")
     }
 }
