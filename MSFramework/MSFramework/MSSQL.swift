@@ -10,12 +10,12 @@
 
 public enum MSSQLError : Error
 {
-    case whereConditionCountsNotEquivelent, whereConditionsCannotBeEmpty, conditionAlreadyExists, cannotUseWildcardSpecifier, cannotUseEmptyValue, attributeLengthTooLong, conditionsMustBeEqual, unexpectedValueFound
+    case whereConditionCountsNotEquivelent, whereConditionsCannotBeEmpty, whereConditionsCannotBeEqual, cannotUseWildcardSpecifier, cannotUseEmptyValue, attributeLengthTooLong, conditionsMustBeEqual, conditionAlreadyExists, unexpectedValueFound
 }
 
 public enum MSSQLConjunction : String
 {
-    case and = " AND", or = " OR", none = " NONE"
+    case and = " AND", or = " OR", none = " NONE", andNot = " AND NOT", orNot = " OR NOT"
 }
 
 public enum MSSQLJoin : String
@@ -25,7 +25,7 @@ public enum MSSQLJoin : String
 
 public enum MSSQLEquivalence : String
 {
-    case equals = "=", notEquals = "!=", lessThan = "<", greaterThan = ">", lessThanOrEqual = "<=", greaterThanOrEqual = ">="
+    case equals = "=", notEquals = "!=", lessThan = "<", greaterThan = ">", lessThanOrEqual = "<=", greaterThanOrEqual = ">=", like = " LIKE ", notLike = " NOT LIKE ", between = " BETWEEN ", notBetween = " NOT BETWEEN ", `in` = " IN ", notIn = " NOT IN "
 }
 
 public enum MSSQLOrderBy : String
@@ -37,15 +37,15 @@ public enum MSSQLOrderBy : String
 
 public struct MSSQLClause
 {
-    let leftHandSide    : String
-    let rightHandSide   : String
+    let attribute   : String
+    let value       : String
 }
 
 public struct Join
 {
-    let table           : String
-    let leftHandSide    : String
-    let rightHandSide   : String
+    let table       : String
+    let attribute   : String
+    let value       : String
 }
 
 fileprivate struct InternalJoin
@@ -117,8 +117,8 @@ public final class MSSQL
             returnString += " WHERE"
             for whereStatement in whereStatements
             {
-                let left = whereStatement.clause.leftHandSide
-                var right = whereStatement.clause.rightHandSide
+                let left = whereStatement.clause.attribute
+                var right = whereStatement.clause.value
                 
                 if right.contains(" ") || Int(right) == nil
                 {
@@ -136,13 +136,13 @@ public final class MSSQL
             guard orderByStatements.isEmpty == false else { return }
             if orderByStatements.count == 1
             {
-            for orderByStatement in orderByStatements
-            {
-                let attribute = orderByStatement.attribute
-                let direction = orderByStatement.orderBy.rawValue
-                
-                returnString += " " + attribute + direction
-            }
+                for orderByStatement in orderByStatements
+                {
+                    let attribute = orderByStatement.attribute
+                    let direction = orderByStatement.orderBy.rawValue
+                    
+                    returnString += " " + attribute + direction
+                }
             }
             else
             {
@@ -182,6 +182,10 @@ public final class MSSQL
             returnString += " LIMIT \(limitNum)"
         }
         
+        defer
+        {
+            insertAppendedStatements()
+        }
         
         //UPDATE statements
         if updateStatements.isEmpty == false
@@ -192,8 +196,8 @@ public final class MSSQL
             
             for clause in updateStatements
             {
-                let left = clause.leftHandSide
-                var right = clause.rightHandSide
+                let left = clause.attribute
+                var right = clause.value
                 
                 if right.contains(" ") || Int(right) == nil
                 {
@@ -209,7 +213,7 @@ public final class MSSQL
             
             returnString += ";"
             
-            insertAppendedStatements()
+            //insertAppendedStatements()
             
             return returnString
         }
@@ -241,7 +245,7 @@ public final class MSSQL
             
             returnString = (returnString as NSString).substring(to: returnString.characters.count - 1) + ");"
             
-            insertAppendedStatements()
+            //insertAppendedStatements()
             
             return returnString
         }
@@ -273,8 +277,8 @@ public final class MSSQL
         {
             for join in joinStatements
             {
-                let left = join.clause.leftHandSide
-                var right = join.clause.rightHandSide
+                let left = join.clause.attribute
+                var right = join.clause.value
                 
                 if right.contains(" ") || Int(right) == nil
                 {
@@ -290,7 +294,7 @@ public final class MSSQL
         
         returnString += ";"
         
-        insertAppendedStatements()
+        //insertAppendedStatements()
         
         return returnString
     }
@@ -299,6 +303,12 @@ public final class MSSQL
     {
         if attribute.contains("*")          { throw MSSQLError.cannotUseWildcardSpecifier }
         if attribute == ""                  { throw MSSQLError.cannotUseEmptyValue }
+        
+        let specifiers = ["=", "!=", "<", ">", " NATURAL", " OUTER", " CROSS", " INNER", ",", "\"", "'", " LIKE", " NOT", " ASC", " DESC", "SELECT ", "FROM ", "JOIN ", "WHERE ", "ORDER BY", "IN ", "BETWEEN ", " AND", " OR"]
+        for specifier in specifiers
+        {
+            if attribute.uppercased().contains(specifier) { throw MSSQLError.unexpectedValueFound }
+        }
         
         switch attribute.contains(".")
         {
@@ -323,9 +333,24 @@ public final class MSSQL
         }
     }
     
-    private func check(value: String) throws
+    private func check(value: String, equivalence: MSSQLEquivalence = .lessThan) throws
     {
         if value == "" { throw MSSQLError.cannotUseEmptyValue }
+        
+        let specifiers : [String]
+        if equivalence != .between && equivalence != .notBetween
+        {
+            
+            specifiers = ["=", "!=", "<", ">", " NATURAL", " OUTER", " CROSS", " INNER", ",", "\"", "'", " LIKE", " NOT", " ASC", " DESC", "SELECT ", "FROM ", "JOIN ", "WHERE ", "ORDER BY", "IN ", "BETWEEN ", " AND", " OR"]
+        }
+        else
+        {
+            specifiers = ["=", "!=", "<", ">", " NATURAL", " OUTER", " CROSS", " INNER", ",", "\"", "'", " LIKE", " NOT", " ASC", " DESC", "SELECT ", "FROM ", "JOIN ", "WHERE ", "ORDER BY", "IN ", "BETWEEN ", " OR"]
+        }
+        for specifier in specifiers
+        {
+            if value.uppercased().contains(specifier) { throw MSSQLError.unexpectedValueFound }
+        }
     }
     
     //MARK: SELECT Constructors
@@ -423,7 +448,7 @@ public final class MSSQL
         
         fromTables = [table]
         
-        updateStatements = [MSSQLClause(leftHandSide: leftHandSide, rightHandSide: rightHandSide)]
+        updateStatements = [MSSQLClause(attribute: leftHandSide, value: rightHandSide)]
         
         return self
     }
@@ -443,8 +468,8 @@ public final class MSSQL
         try check(attribute: table)
         for clause in clauses
         {
-            try check(attribute: clause.leftHandSide)
-            try check(value: clause.rightHandSide)
+            try check(attribute: clause.attribute)
+            try check(value: clause.value)
         }
         
         fromTables = [table]
@@ -503,7 +528,7 @@ public final class MSSQL
         try check(attribute: leftHandSide)
         try check(value: rightHandSide)
         
-        joinStatements = [InternalJoin(joinType: join, table: table, clause: MSSQLClause(leftHandSide: leftHandSide, rightHandSide: rightHandSide))]
+        joinStatements = [InternalJoin(joinType: join, table: table, clause: MSSQLClause(attribute: leftHandSide, value: rightHandSide))]
         
         return self
     }
@@ -521,13 +546,13 @@ public final class MSSQL
         for join in joins
         {
             try check(attribute: join.table)
-            try check(attribute: join.leftHandSide)
-            try check(value: join.rightHandSide)
+            try check(attribute: join.attribute)
+            try check(value: join.value)
         }
         
         for joinn in joins
         {
-            joinStatements.append(InternalJoin(joinType: join, table: joinn.table, clause: MSSQLClause(leftHandSide: joinn.leftHandSide, rightHandSide: joinn.rightHandSide)))
+            joinStatements.append(InternalJoin(joinType: join, table: joinn.table, clause: MSSQLClause(attribute: joinn.attribute, value: joinn.value)))
         }
         
         return self
@@ -546,10 +571,11 @@ public final class MSSQL
     public func `where`(_ equivalence: MSSQLEquivalence, leftHandSide: String, rightHandSide: String) throws -> MSSQL
     {
         guard whereStatements.isEmpty else { throw MSSQLError.conditionAlreadyExists }
+        guard leftHandSide != rightHandSide else { throw MSSQLError.whereConditionsCannotBeEqual }
         try check(attribute: leftHandSide)
-        try check(value: rightHandSide)
+        try check(value: rightHandSide, equivalence: equivalence)
         
-        whereStatements = [Where(conjunction: .none, equivalence: equivalence, clause: MSSQLClause(leftHandSide: leftHandSide, rightHandSide: rightHandSide))]
+        whereStatements = [Where(conjunction: .none, equivalence: equivalence, clause: MSSQLClause(attribute: leftHandSide, value: rightHandSide))]
         
         return self
     }
@@ -573,24 +599,25 @@ public final class MSSQL
         }
         for rightHandSide in rightHandSides
         {
-            try check(value: rightHandSide)
+            try check(value: rightHandSide, equivalence: equivalence)
         }
         
         for index in 0..<leftHandSides.count - 1
         {
             let leftHandSide = leftHandSides[index]
             let rightHandSide = rightHandSides[index]
+            guard leftHandSide != rightHandSide else { throw MSSQLError.whereConditionsCannotBeEqual }
             
-            whereStatements.append(Where(conjunction: `where`, equivalence: equivalence, clause: MSSQLClause(leftHandSide: leftHandSide, rightHandSide: rightHandSide)))
+            whereStatements.append(Where(conjunction: `where`, equivalence: equivalence, clause: MSSQLClause(attribute: leftHandSide, value: rightHandSide)))
         }
         
-        whereStatements.append(Where(conjunction: .none, equivalence: equivalence, clause: MSSQLClause(leftHandSide: leftHandSides[leftHandSides.count - 1], rightHandSide: rightHandSides[leftHandSides.count - 1])))
+        whereStatements.append(Where(conjunction: .none, equivalence: equivalence, clause: MSSQLClause(attribute: leftHandSides[leftHandSides.count - 1], value: rightHandSides[leftHandSides.count - 1])))
         
         return self
     }
     
     /**
-     WHERE ...X...[, ...X...] statement
+     WHERE ...X...[, ...Y...] statement
      - Parameter custom: A collection of `Where` structs.  The last `Where` struct **MUST** have `.none` as the conjunction
      - Returns: An instance of `MSSQL`
      - Throws: `MSSQLError` If a parameter is null, already exists, `*` is used as the `table` or `leftHandSide` parameter of any `Where`, is empty, any `leftHandSide` is greater than 64 characters in length, or if the last `Where` struct does not have `.none` as its conjunction
@@ -602,8 +629,9 @@ public final class MSSQL
         
         for `where` in custom
         {
-            try check(attribute: `where`.clause.leftHandSide)
-            try check(value: `where`.clause.rightHandSide)
+            try check(attribute: `where`.clause.attribute)
+            try check(value: `where`.clause.value, equivalence: `where`.equivalence)
+            guard `where`.clause.attribute != `where`.clause.value else { throw MSSQLError.whereConditionsCannotBeEqual }
         }
         
         guard custom[custom.count - 1].conjunction == .none else { throw MSSQLError.unexpectedValueFound }
@@ -612,6 +640,8 @@ public final class MSSQL
         
         return self
     }
+    
+    //MARK: ORDER BY Constructors
     
     /**
      ORDER BY ... ASC|DESC statement
@@ -646,6 +676,8 @@ public final class MSSQL
         orderByStatements = attributes
         return self
     }
+    
+    //MARK: LIMIT Constructor
     
     /**
      LIMIT X statement
