@@ -5,7 +5,7 @@ iOS Framework for pulling JSON data using `POST` from a MySQL database and stori
 
 ---
 
-**PLEASE READ**: MSFramework is written in Swift 3, which requires Xcode 8+.  MSFramework is _**not**_ compatible with Objective-C, due to it using internal Swift types that are currently unrepresentable in Objective-C.
+**PLEASE READ**: MSFramework is written in Swift 3, which requires Xcode 8+.  MSFramework is _**not**_ compatible with Objective-C, due to it using internal Swift types that are currently unrepresentable in Objective-C.  To work around this, you could make a Swift wrapper for your Objective-C code.
 
 ---
 
@@ -15,9 +15,7 @@ MSFramework is compatible with macOS, iOS, tvOS, and watchOS
 1. Drag the `MSFramework.xcodeproj` file into your Xcode project
 2. Under your project target's General tab, click on the `+` in the **Embedded Frameworks** section
 3. Click the `MSFramework.framework` Framework and press add
-4. In any file you wish to use MSFramework, add this header:
-	* Swift: `import MSFramework`
-	* Obj-C: `@import MSFramework;`  **NOTE:** As of right now, MSFramework does not import into Objective-C properly.  Please raise an issue post if you manage to solve this before I can.
+4. In any file you wish to use MSFramework, add this header: `import MSFramework`
 
 ##Use
 MSFramework is intended to be used opaquely.  While the source code is yours to tamper with, you should not unless you know what you're doing.
@@ -39,11 +37,11 @@ MSFramework requires a data source that complies with the `MSFrameworkDataSource
 
 ##SQL
 
-MSFramework has its own SQL class: `MSSQL`. This class supports all SQL `SELECT`, `SELECT INTO` (no support for `INSERT INTO SELECT`), `FROM`, `JOIN`, `INSERT INTO`, `UPDATE`, `ORDER BY`, `LIMIT`, and `WHERE` combinations.  `MSSQL` also supports all of the SQL functions.  This class is overload and security safe, and will automatically sanitize its input, throwing catchable errors when it encounters illegal text. MSFramework uses this class for processing SQL queries up to a database.
+MSFramework has its own SQL class: `MSSQL`. This class supports all SQL `SELECT`, `SELECT INTO`, `FROM`, `JOIN`, `INSERT INTO` (no support for `INSERT INTO SELECT`), `UPDATE`, `ORDER BY`, `LIMIT`, and `WHERE` combinations.  `MSSQL` also supports all of the SQL functions.  This class is overload and security safe, and will automatically sanitize its input, throwing catchable errors when it encounters illegal text. MSFramework uses this class for processing SQL queries up to a database.
 
 See the `MSSQL` class for more info.
 
-**NOTE**: `MSSQL` currently does not allow nested or `UNION` SQL statements.  These may come in the future.
+**NOTE**: `MSSQL` currently does not have support for nested or `UNION` SQL statements.  These may come in the future.
 
 ##Classes
 
