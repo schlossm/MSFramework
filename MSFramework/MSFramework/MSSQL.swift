@@ -87,6 +87,8 @@ public final class MSSQL
     
     private     var distinctSELECT      = false
     
+    private     var limitNum            = -1
+    
     var formattedStatement : String
     {
         return formatted()
@@ -170,6 +172,14 @@ public final class MSSQL
             {
                 returnString += " " + statement.formatted()
             }
+        }
+        
+        //LIMIT
+        func insertLimit()
+        {
+            guard limitNum > 0 else { return }
+            
+            returnString += " LIMIT \(limitNum)"
         }
         
         
@@ -276,6 +286,7 @@ public final class MSSQL
         }
         
         insertWhereAndOrderByStatements()
+        insertLimit()
         
         returnString += ";"
         
@@ -633,6 +644,23 @@ public final class MSSQL
         }
         
         orderByStatements = attributes
+        return self
+    }
+    
+    /**
+     LIMIT X statement
+     
+     Can only be used with SELECT statements
+     - Parameter num: the limit of rows to return for display.  Must be greater than 0
+     - Throws: `MSSQLError` if `num` is less than 1
+     - Returns: An instance of `MSSQL`
+     */
+    public func limit(_ num: Int) throws -> MSSQL
+    {
+        guard limitNum < 1  else { throw MSSQLError.conditionAlreadyExists }
+        guard num > 0       else { throw MSSQLError.unexpectedValueFound }
+        
+        limitNum = num
         return self
     }
 }
