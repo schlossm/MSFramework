@@ -39,7 +39,7 @@ MSFramework requires a data source that complies with the `MSFrameworkDataSource
 
 ##SQL
 
-MSFramework has its own SQL class: `MSSQL`. This class contains all SQL `SELECT`, `FROM`, `JOIN`, `INSERT`, `UPDATE`, and `WHERE` combinations.  This class is overload and security safe, and will automatically sanitize its input, throwing catchable errors when it encounters illegal text. MSFramework uses this class for processing SQL queries up to a database.
+MSFramework has its own SQL class: `MSSQL`. This class contains all SQL `SELECT`, `FROM`, `JOIN`, `INSERT`, `UPDATE`, `ORDER BY`, and `WHERE` combinations.  This class is overload and security safe, and will automatically sanitize its input, throwing catchable errors when it encounters illegal text. MSFramework uses this class for processing SQL queries up to a database.
 
 See the `MSSQL` class for more info.
 
