@@ -73,6 +73,9 @@ public struct Where
 public final class MSSQL
 {
     private     var selectRows          = [String]()
+    private     var intoTable           = ""
+    private     var inDB                = ""
+    
     internal    var fromTables          = [String]()
     private     var joinStatements      = [InternalJoin]()
     private     var whereStatements     = [Where]()
@@ -359,16 +362,33 @@ public final class MSSQL
      SELECT statement with 1 row
      - Parameter attribute: the attribute to request
      - Parameter distinct: if the query should return only distinct rows or not.  Defaults to `false`
+     - Parameter into: A table, if any, to copy(insert) this data into
+     - Parameter in: An exterior database, if any, the `into` table resides.  A value of `nil` assumes the current working database
      - Returns: An instance of `MSSQL`
      - Throws: `MSSQLError`: If no attribute specified, `*` is used, is empty, or is greater than 64 characters in length
      */
-    public func select(_ attribute: String, distinct: Bool = false) throws -> MSSQL
+    public func select(_ attribute: String, distinct: Bool = false, into: String?, `in`:String?) throws -> MSSQL
     {
         guard selectRows.isEmpty else { throw MSSQLError.conditionAlreadyExists }
         try check(attribute: attribute)
         
         distinctSELECT = distinct
         selectRows = [attribute]
+        
+        if let intoT = into
+        {
+            guard intoTable == "" else { throw MSSQLError.conditionAlreadyExists }
+            try check(attribute: intoT)
+            intoTable = intoT
+            
+            if let inDatabase = `in`
+            {
+                guard inDB == "" else { throw MSSQLError.conditionAlreadyExists }
+                try check(attribute: inDatabase)
+                inDB = inDatabase
+            }
+        }
+        
         return self
     }
     
@@ -376,10 +396,12 @@ public final class MSSQL
      SELECT statement with multiple rows
      - Parameter attributes: the attributes to request
      - Parameter distinct: if the query should return only distinct rows or not.  Defaults to `false`
+     - Parameter into: A table, if any, to copy(insert) this data into
+     - Parameter in: An exterior database, if any, the `into` table resides.  A value of `nil` assumes the current working database
      - Returns: An instance of `MSSQL`
      - Throws: `MSSQLError`: If no attributes specified, `*` is used, is empty, or any attribute is greater than 64 characters in length
      */
-    public func select(_ attributes: [String], distinct: Bool = false) throws -> MSSQL
+    public func select(_ attributes: [String], distinct: Bool = false, into: String?, `in`: String?) throws -> MSSQL
     {
         guard selectRows.isEmpty else { throw MSSQLError.conditionAlreadyExists }
         for attribute in attributes
@@ -389,6 +411,21 @@ public final class MSSQL
         
         distinctSELECT = distinct
         selectRows = attributes
+        
+        if let intoT = into
+        {
+            guard intoTable == "" else { throw MSSQLError.conditionAlreadyExists }
+            try check(attribute: intoT)
+            intoTable = intoT
+            
+            if let inDatabase = `in`
+            {
+                guard inDB == "" else { throw MSSQLError.conditionAlreadyExists }
+                try check(attribute: inDatabase)
+                inDB = inDatabase
+            }
+        }
+        
         return self
     }
     
