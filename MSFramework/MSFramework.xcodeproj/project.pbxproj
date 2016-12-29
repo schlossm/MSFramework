@@ -75,7 +75,7 @@
 		10166DCE1E101F3100627A76 /* Data+Hex.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10166D6E1E101C8F00627A76 /* Data+Hex.swift */; };
 		10166DCF1E101F3100627A76 /* MSCoreDataStack.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10166D6F1E101C8F00627A76 /* MSCoreDataStack.swift */; };
 		10166DD01E101F3100627A76 /* MSFrameworkManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10166D701E101C8F00627A76 /* MSFrameworkManager.swift */; };
-		10166DD11E101F3100627A76 /* MSDatabaseDataSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10166D711E101C8F00627A76 /* MSDatabaseDataSource.swift */; };
+		10166DD11E101F3100627A76 /* MSFrameworkDataSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10166D711E101C8F00627A76 /* MSFrameworkDataSource.swift */; };
 		10166DD21E101F3100627A76 /* MSDataDownloader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10166D721E101C8F00627A76 /* MSDataDownloader.swift */; };
 		10166DD31E101F3100627A76 /* MSDataSizePrinter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10166D731E101C8F00627A76 /* MSDataSizePrinter.swift */; };
 		10166DD41E101F3100627A76 /* MSDataUploader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10166D741E101C8F00627A76 /* MSDataUploader.swift */; };
@@ -152,7 +152,7 @@
 		10166D6E1E101C8F00627A76 /* Data+Hex.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = "Data+Hex.swift"; path = "../Data+Hex.swift"; sourceTree = "<group>"; };
 		10166D6F1E101C8F00627A76 /* MSCoreDataStack.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = MSCoreDataStack.swift; path = ../MSCoreDataStack.swift; sourceTree = "<group>"; };
 		10166D701E101C8F00627A76 /* MSFrameworkManager.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; lineEnding = 0; name = MSFrameworkManager.swift; path = ../MSFrameworkManager.swift; sourceTree = "<group>"; };
-		10166D711E101C8F00627A76 /* MSDatabaseDataSource.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = MSDatabaseDataSource.swift; path = ../MSDatabaseDataSource.swift; sourceTree = "<group>"; wrapsLines = 1; };
+		10166D711E101C8F00627A76 /* MSFrameworkDataSource.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = MSFrameworkDataSource.swift; path = ../MSFrameworkDataSource.swift; sourceTree = "<group>"; wrapsLines = 1; };
 		10166D721E101C8F00627A76 /* MSDataDownloader.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = MSDataDownloader.swift; path = ../MSDataDownloader.swift; sourceTree = "<group>"; };
 		10166D731E101C8F00627A76 /* MSDataSizePrinter.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = MSDataSizePrinter.swift; path = ../MSDataSizePrinter.swift; sourceTree = "<group>"; };
 		10166D741E101C8F00627A76 /* MSDataUploader.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = MSDataUploader.swift; path = ../MSDataUploader.swift; sourceTree = "<group>"; };
@@ -267,7 +267,7 @@
 				10166D6E1E101C8F00627A76 /* Data+Hex.swift */,
 				10166D6F1E101C8F00627A76 /* MSCoreDataStack.swift */,
 				10166D701E101C8F00627A76 /* MSFrameworkManager.swift */,
-				10166D711E101C8F00627A76 /* MSDatabaseDataSource.swift */,
+				10166D711E101C8F00627A76 /* MSFrameworkDataSource.swift */,
 				10166D721E101C8F00627A76 /* MSDataDownloader.swift */,
 				10166D741E101C8F00627A76 /* MSDataUploader.swift */,
 				10166D731E101C8F00627A76 /* MSDataSizePrinter.swift */,
@@ -443,7 +443,7 @@
 				10166DAE1E101C8F00627A76 /* String+Extension.swift in Sources */,
 				10166DB11E101C8F00627A76 /* UInt64+Extension.swift in Sources */,
 				10166DAB1E101C8F00627A76 /* SHA1.swift in Sources */,
-				10166DD11E101F3100627A76 /* MSDatabaseDataSource.swift in Sources */,
+				10166DD11E101F3100627A76 /* MSFrameworkDataSource.swift in Sources */,
 				10166D841E101C8F00627A76 /* PCBC.swift in Sources */,
 				10166D921E101C8F00627A76 /* ChaCha20+Foundation.swift in Sources */,
 				10166D7B1E101C8F00627A76 /* BlockCipher.swift in Sources */,

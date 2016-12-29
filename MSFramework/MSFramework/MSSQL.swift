@@ -9,7 +9,7 @@
 //MARK: - Constants
 
 /**
- Denotes the `WHERE` statement's comparator is `MSSQLEquivalence.isNull` or `MSSQLEquivalence.isNotNull`
+ Use this constant **only** when the `WHERE` statement's comparator is `MSSQLEquivalence.isNull` or `MSSQLEquivalence.isNotNull`
  */
 let WhereStatementComparesNullString = "Where Statement is comparing a null statement."
 
@@ -119,8 +119,22 @@ public enum MSSQLJoin : String
  */
 public enum MSSQLEquivalence : String
 {
+    /**
+     Single number comparator
+     */
     case equals = "=", notEquals = "!=", lessThan = "<", greaterThan = ">", lessThanOrEqual = "<=", greaterThanOrEqual = ">="
-    case like = " LIKE ", notLike = " NOT LIKE ", between = " BETWEEN ", notBetween = " NOT BETWEEN ", `in` = " IN ", notIn = " NOT IN "
+    /**
+     String comparator
+     */
+    case like = " LIKE ", notLike = " NOT LIKE "
+    /**
+     Number array comparator
+     */
+    case between = " BETWEEN ", notBetween = " NOT BETWEEN ", `in` = " IN ", notIn = " NOT IN "
+    
+    /**
+     Value existence
+     */
     case isNull = " IS NULL", isNotNull = " IS NOT NULL"
 }
 
@@ -129,6 +143,9 @@ public enum MSSQLEquivalence : String
  */
 public enum MSSQLOrderBy : String
 {
+    /**
+     Order direction
+     */
     case ascending = " ASC", descending = " DESC"
 }
 
@@ -224,24 +241,23 @@ public struct Where
 public final class MSSQL
 {
     private     var selectRows          = [String]()
+    private     var distinctSelect      = false
     private     var intoTable           = ""
     private     var inDB                = ""
     
     internal    var fromTables          = [String]()
     private     var joinStatements      = [InternalJoin]()
     private     var whereStatements     = [Where]()
+    private     var orderByStatements   = [OrderBy]()
+    
+    private     var limitNum            = -1
     
     private     var insertRows          = [String]()
     private     var insertValues        = [String]()
     
     private     var updateStatements    = [MSSQLClause]()
+    
     internal    var appendedSQL         = [MSSQL]()
-    
-    private     var orderByStatements   = [OrderBy]()
-    
-    private     var distinctSELECT      = false
-    
-    private     var limitNum            = -1
     
     var formattedStatement : String
     {
@@ -418,7 +434,7 @@ public final class MSSQL
         guard selectRows.isEmpty == false else { return returnString }
         
         returnString = "SELECT "
-        if distinctSELECT == true
+        if distinctSelect == true
         {
             returnString += "DISTINCT "
         }
@@ -469,7 +485,7 @@ public final class MSSQL
         return returnString
     }
     
-    private func check(attribute: String) throws
+    private func check(_ attribute: String) throws
     {
         if attribute.contains("*")          { throw MSSQLError.cannotUseWildcardSpecifier }
         if attribute == ""                  { throw MSSQLError.cannotUseEmptyValue }
@@ -529,29 +545,29 @@ public final class MSSQL
      SELECT statement with 1 row
      - Parameter attribute: the attribute to request
      - Parameter distinct: if the query should return only distinct rows or not.  Defaults to `false`
-     - Parameter into: A table, if any, to copy(insert) this data into
-     - Parameter in: An exterior database, if any, the `into` table resides.  A value of `nil` assumes the current working database
+     - Parameter into: A table, if any, to copy(insert) this data into.  Defaults to `nil`
+     - Parameter in: An exterior database, if any, the `into` table resides.  A value of `nil` assumes the current working database.  Defaults to `nil`
      - Returns: An instance of `MSSQL`
      - Throws: `MSSQLError`: If no attribute specified, `*` is used, is empty, or is greater than 64 characters in length
      */
-    public func select(_ attribute: String, distinct: Bool = false, into: String?, `in`:String?) throws -> MSSQL
+    public func select(_ attribute: String, distinct: Bool = false, into: String? = nil, `in`:String? = nil) throws -> MSSQL
     {
         guard selectRows.isEmpty else { throw MSSQLError.conditionAlreadyExists }
-        try check(attribute: attribute)
+        try check(attribute)
         
-        distinctSELECT = distinct
+        distinctSelect = distinct
         selectRows = [attribute]
         
         if let intoT = into
         {
             guard intoTable == "" else { throw MSSQLError.conditionAlreadyExists }
-            try check(attribute: intoT)
+            try check(intoT)
             intoTable = intoT
             
             if let inDatabase = `in`
             {
                 guard inDB == "" else { throw MSSQLError.conditionAlreadyExists }
-                try check(attribute: inDatabase)
+                try check(inDatabase)
                 inDB = inDatabase
             }
         }
@@ -563,32 +579,32 @@ public final class MSSQL
      SELECT statement with multiple rows
      - Parameter attributes: the attributes to request
      - Parameter distinct: if the query should return only distinct rows or not.  Defaults to `false`
-     - Parameter into: A table, if any, to copy(insert) this data into
-     - Parameter in: An exterior database, if any, the `into` table resides.  A value of `nil` assumes the current working database
+     - Parameter into: A table, if any, to copy(insert) this data into.  Defaults to `nil`
+     - Parameter in: An exterior database, if any, the `into` table resides.  A value of `nil` assumes the current working database.  Defaults to `nil`
      - Returns: An instance of `MSSQL`
      - Throws: `MSSQLError`: If no attributes specified, `*` is used, is empty, or any attribute is greater than 64 characters in length
      */
-    public func select(_ attributes: [String], distinct: Bool = false, into: String?, `in`: String?) throws -> MSSQL
+    public func select(_ attributes: [String], distinct: Bool = false, into: String? = nil, `in`: String? = nil) throws -> MSSQL
     {
         guard selectRows.isEmpty else { throw MSSQLError.conditionAlreadyExists }
         for attribute in attributes
         {
-            try check(attribute: attribute)
+            try check(attribute)
         }
         
-        distinctSELECT = distinct
+        distinctSelect = distinct
         selectRows = attributes
         
         if let intoT = into
         {
             guard intoTable == "" else { throw MSSQLError.conditionAlreadyExists }
-            try check(attribute: intoT)
+            try check(intoT)
             intoTable = intoT
             
             if let inDatabase = `in`
             {
                 guard inDB == "" else { throw MSSQLError.conditionAlreadyExists }
-                try check(attribute: inDatabase)
+                try check(inDatabase)
                 inDB = inDatabase
             }
         }
@@ -607,7 +623,7 @@ public final class MSSQL
     public func from(_ table: String) throws -> MSSQL
     {
         guard fromTables.isEmpty else { throw MSSQLError.conditionAlreadyExists }
-        try check(attribute: table)
+        try check(table)
         
         fromTables = [table]
         return self
@@ -625,7 +641,7 @@ public final class MSSQL
         
         for table in tables
         {
-            try check(attribute: table)
+            try check(table)
         }
         
         fromTables = tables
@@ -637,22 +653,22 @@ public final class MSSQL
     /**
      UPDATE statement with one clause
      - Parameter table: The table to request
-     - Parameter leftHandSide: The left hand side of the clause
-     - Parameter rightHandSide: The right hand side of the clause
+     - Parameter attribute: The left hand side of the clause
+     - Parameter value: The right hand side of the clause
      - Returns: An instance of `MSSQL`
-     - Throws: `MSSQLError` If a parameter is nil, already exists, `*` is used, is empty, or the `table` | `leftHandSide` is greater than 64 characters in length
+     - Throws: `MSSQLError` If a parameter is nil, already exists, `*` is used, is empty, or the `table` | `attribute` is greater than 64 characters in length
      */
-    public func update(_ table: String, leftHandSide: String, rightHandSide: String) throws -> MSSQL
+    public func update(_ table: String, attribute: String, value: String) throws -> MSSQL
     {
         guard fromTables.isEmpty && updateStatements.isEmpty else { throw MSSQLError.conditionAlreadyExists }
         
-        try check(attribute: table)
-        try check(attribute: leftHandSide)
-        try check(value: rightHandSide)
+        try check(table)
+        try check(attribute)
+        try check(value: value)
         
         fromTables = [table]
         
-        updateStatements = [MSSQLClause(attribute: leftHandSide, value: rightHandSide)]
+        updateStatements = [MSSQLClause(attribute: attribute, value: value)]
         
         return self
     }
@@ -662,17 +678,17 @@ public final class MSSQL
      - Parameter table: The table to request
      - Parameter clauses: The clauses
      - Returns: An instance of `MSSQL`
-     - Throws: `MSSQLError` If a parameter is nil, already exists, `*` is used, is empty, or the `table` | `leftHandSide` of any clause is greater than 64 characters in length
+     - Throws: `MSSQLError` If a parameter is nil, already exists, `*` is used, is empty, or the `table` | `attribute` of any clause is greater than 64 characters in length
      */
     public func update(_ table: String, set clauses: [MSSQLClause]) throws -> MSSQL
     {
         
         guard fromTables.isEmpty && updateStatements.isEmpty else { throw MSSQLError.conditionAlreadyExists }
         
-        try check(attribute: table)
+        try check(table)
         for clause in clauses
         {
-            try check(attribute: clause.attribute)
+            try check(clause.attribute)
             try check(value: clause.value)
         }
         
@@ -696,10 +712,10 @@ public final class MSSQL
     {
         guard fromTables.isEmpty && insertRows.isEmpty && insertValues.isEmpty else { throw MSSQLError.conditionAlreadyExists }
         
-        try check(attribute: table)
+        try check(table)
         for attribute in attributes
         {
-            try check(attribute: attribute)
+            try check(attribute)
         }
         
         for value in values
@@ -719,20 +735,20 @@ public final class MSSQL
     /**
      JOIN statement convenience method
      - Parameter table: the table to join on
-     - Parameter leftHandSide: the left hand side of the clause
-     - Parameter rightHandSide: the right hand side of the clause
+     - Parameter attribute: the left hand side of the clause
+     - Parameter value: the right hand side of the clause
      - Returns: An instance of `MSSQL`
-     - Throws: `MSSQLError` If a parameter is null, already exists, `*` is used, is empty, or if the `table` | `leftHandSide` is greater than 64 characters in length
+     - Throws: `MSSQLError` If a parameter is null, already exists, `*` is used, is empty, or if the `table` | `attribute` is greater than 64 characters in length
      */
-    public func join(_ join: MSSQLJoin, table: String, leftHandSide: String, rightHandSide: String) throws -> MSSQL
+    public func join(_ join: MSSQLJoin, table: String, attribute: String, value: String) throws -> MSSQL
     {
         guard joinStatements.isEmpty else { throw MSSQLError.conditionAlreadyExists }
         
-        try check(attribute: table)
-        try check(attribute: leftHandSide)
-        try check(value: rightHandSide)
+        try check(table)
+        try check(attribute)
+        try check(value: value)
         
-        joinStatements = [InternalJoin(joinType: join, table: table, clause: MSSQLClause(attribute: leftHandSide, value: rightHandSide))]
+        joinStatements = [InternalJoin(joinType: join, table: table, clause: MSSQLClause(attribute: attribute, value: value))]
         
         return self
     }
@@ -741,7 +757,7 @@ public final class MSSQL
      JOIN statement convenience method
      - Parameter joins: The joins to make
      - Returns: An instance of `MSSQL`
-     - Throws: `MSSQLError` If a parameter is null, already exists, `*` is used, is empty, or if the `table` | `leftHandSide` of any `Join` is greater than 64 characters in length
+     - Throws: `MSSQLError` If a parameter is null, already exists, `*` is used, is empty, or if the `table` | `attribute` of any `Join` is greater than 64 characters in length
      */
     public func join(_ join: MSSQLJoin, joins: [Join]) throws -> MSSQL
     {
@@ -749,8 +765,8 @@ public final class MSSQL
         
         for join in joins
         {
-            try check(attribute: join.table)
-            try check(attribute: join.tableOneAttribute)
+            try check(join.table)
+            try check(join.tableOneAttribute)
             try check(value: join.tableTwoAttribute)
         }
         
@@ -768,22 +784,22 @@ public final class MSSQL
      WHERE ...X... statement
      - Note: Please use `WhereStatementComparesNullString` as the value if you plan to use `.isNull` or `isNotNull` for the equivalence
      - Parameter equivalence: The equivalence of the statement
-     - Parameter leftHandSide: The left hand side of the clause
-     - Parameter rightHandSide: The right hand side of the clause
+     - Parameter attribute: The left hand side of the clause
+     - Parameter value: The right hand side of the clause
      - Returns: An instance of `MSSQL`
-     - Throws: `MSSQLError` If a parameter is null, already exists, `*` is used in an attribute, is empty, or the `leftHandSide` is greater than 64 characters in length
+     - Throws: `MSSQLError` If a parameter is null, already exists, `*` is used in an attribute, is empty, or the `attribute` is greater than 64 characters in length
      */
-    public func `where`(_ equivalence: MSSQLEquivalence, leftHandSide: String, rightHandSide: String) throws -> MSSQL
+    public func `where`(_ equivalence: MSSQLEquivalence, attribute: String, value: String) throws -> MSSQL
     {
         guard whereStatements.isEmpty else { throw MSSQLError.conditionAlreadyExists }
-        guard leftHandSide != rightHandSide else { throw MSSQLError.whereConditionsCannotBeEqual }
-        try check(attribute: leftHandSide)
-        if rightHandSide != WhereStatementComparesNullString
+        guard attribute != value else { throw MSSQLError.whereConditionsCannotBeEqual }
+        try check(attribute)
+        if value != WhereStatementComparesNullString
         {
-            try check(value: rightHandSide, equivalence: equivalence)
+            try check(value: value, equivalence: equivalence)
         }
         
-        whereStatements = [Where(conjunction: .none, equivalence: equivalence, clause: MSSQLClause(attribute: leftHandSide, value: rightHandSide))]
+        whereStatements = [Where(conjunction: .none, equivalence: equivalence, clause: MSSQLClause(attribute: attribute, value: value))]
         
         return self
     }
@@ -792,38 +808,38 @@ public final class MSSQL
      WHERE ...X...[, ...X...] statement
      - Note: Please use `WhereStatementComparesNullString` as the value if you plan to use `.isNull` or `isNotNull` for the equivalence
      - Parameter equivalence: The equivalence of each statement
-     - Parameter leftHandSide: The left hand side of the clause
-     - Parameter rightHandSide: The right hand side of the clause
+     - Parameter attribute: The left hand side of the clause
+     - Parameter value: The right hand side of the clause
      - Returns: An instance of `MSSQL`
-     - Throws: `MSSQLError` If a parameter is null, already exists, `*` is used in an attribute, is empty, or any `leftHandSide` is greater than 64 characters in length
+     - Throws: `MSSQLError` If a parameter is null, already exists, `*` is used in an attribute, is empty, or any `attribute` is greater than 64 characters in length
      */
-    public func `where`(_ `where`: MSSQLConjunction, equivalence: MSSQLEquivalence, leftHandSides: [String], rightHandSides: [String]) throws -> MSSQL
+    public func `where`(_ `where`: MSSQLConjunction, equivalence: MSSQLEquivalence, attributes: [String], values: [String]) throws -> MSSQL
     {
         guard whereStatements.isEmpty else { throw MSSQLError.conditionAlreadyExists }
-        guard leftHandSides.count == rightHandSides.count else { throw MSSQLError.conditionsMustBeEqual }
+        guard attributes.count == values.count else { throw MSSQLError.conditionsMustBeEqual }
         
-        for leftHandSide in leftHandSides
+        for attribute in attributes
         {
-            try check(attribute: leftHandSide)
+            try check(attribute)
         }
-        for rightHandSide in rightHandSides
+        for value in values
         {
-            if rightHandSide != WhereStatementComparesNullString
+            if value != WhereStatementComparesNullString
             {
-                try check(value: rightHandSide, equivalence: equivalence)
+                try check(value: value, equivalence: equivalence)
             }
         }
         
-        for index in 0..<leftHandSides.count - 1
+        for index in 0..<attributes.count - 1
         {
-            let leftHandSide = leftHandSides[index]
-            let rightHandSide = rightHandSides[index]
-            guard leftHandSide != rightHandSide else { throw MSSQLError.whereConditionsCannotBeEqual }
+            let attribute = attributes[index]
+            let value = values[index]
+            guard attribute != value else { throw MSSQLError.whereConditionsCannotBeEqual }
             
-            whereStatements.append(Where(conjunction: `where`, equivalence: equivalence, clause: MSSQLClause(attribute: leftHandSide, value: rightHandSide)))
+            whereStatements.append(Where(conjunction: `where`, equivalence: equivalence, clause: MSSQLClause(attribute: attribute, value: value)))
         }
         
-        whereStatements.append(Where(conjunction: .none, equivalence: equivalence, clause: MSSQLClause(attribute: leftHandSides[leftHandSides.count - 1], value: rightHandSides[leftHandSides.count - 1])))
+        whereStatements.append(Where(conjunction: .none, equivalence: equivalence, clause: MSSQLClause(attribute: attributes[attributes.count - 1], value: values[attributes.count - 1])))
         
         return self
     }
@@ -833,16 +849,16 @@ public final class MSSQL
      - Note: Please use `WhereStatementComparesNullString` as the value if you plan to use `.isNull` or `isNotNull` for the equivalence
      - Parameter custom: A collection of `Where` structs.  The last `Where` struct **MUST** have `.none` as the conjunction
      - Returns: An instance of `MSSQL`
-     - Throws: `MSSQLError` If a parameter is null, already exists, `*` is used as the `table` or `leftHandSide` parameter of any `Where`, is empty, any `leftHandSide` is greater than 64 characters in length, or if the last `Where` struct does not have `.none` as its conjunction
+     - Throws: `MSSQLError` If a parameter is null, already exists, `*` is used as the `table` or `attribute` parameter of any `Where`, is empty, any `attribute` is greater than 64 characters in length, or if the last `Where` struct does not have `.none` as its conjunction
      */
-    public func `where`(custom: [Where]) throws -> MSSQL
+    public func `where`(_ custom: [Where]) throws -> MSSQL
     {
         guard custom.isEmpty == false else { throw MSSQLError.cannotUseEmptyValue }
         guard whereStatements.isEmpty else { throw MSSQLError.conditionAlreadyExists }
         
         for `where` in custom
         {
-            try check(attribute: `where`.clause.attribute)
+            try check(`where`.clause.attribute)
             if `where`.clause.value != WhereStatementComparesNullString
             {
                 try check(value: `where`.clause.value, equivalence: `where`.equivalence)
@@ -869,7 +885,7 @@ public final class MSSQL
     public func orderBy(_ attribute: String, direction: MSSQLOrderBy) throws -> MSSQL
     {
         guard orderByStatements.isEmpty else { throw MSSQLError.conditionAlreadyExists }
-        try check(attribute: attribute)
+        try check(attribute)
         
         orderByStatements = [OrderBy(attribute: attribute, orderBy: direction)]
         return self
@@ -886,7 +902,7 @@ public final class MSSQL
         guard orderByStatements.isEmpty else { throw MSSQLError.conditionAlreadyExists }
         for att in attributes
         {
-            try check(attribute: att.attribute)
+            try check(att.attribute)
         }
         
         orderByStatements = attributes

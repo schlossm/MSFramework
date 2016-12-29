@@ -9,10 +9,10 @@
 import CoreData
 
 ///The CoreData manager for MSFramework
-internal class MSCoreDataStack
+class MSCoreDataStack
 {
-    var persistentContainer     : NSPersistentContainer
-    var managedObjectContext    : NSManagedObjectContext?
+    private var persistentContainer     : NSPersistentContainer
+    var managedObjectContext            : NSManagedObjectContext?
     
     init()
     {

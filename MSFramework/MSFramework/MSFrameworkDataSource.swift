@@ -1,5 +1,5 @@
 //
-//  MSDatabaseDataSource.swift
+//  MSFrameworkDataSource.swift
 //  MSFramework
 //
 //  Created by Michael Schloss on 12/24/16.
@@ -16,8 +16,8 @@ public typealias MSDatabaseDataSource = MSFrameworkDataSource
  */
 public struct MySQLToCoreData
 {
-    var databaseTableName : String
-    var coreDataTableName : String
+    public var databaseTableName : String
+    public var coreDataTableName : String
     
     /**
      Used by MSFramework to convert downloaded table attributes to CoreData Entity's attributes.
@@ -27,7 +27,7 @@ public struct MySQLToCoreData
      
      `["downloadedAName":"CDAttributeName"]`
      */
-    var attributesToCDAttributes : [String : String]
+    public var attributesToCDAttributes : [String : String]
 }
 
 public protocol MSFrameworkDataSource
