@@ -29,7 +29,7 @@ public typealias MSDatabase = MSFrameworkManager
 ///The main class for MSFramework.  By using this class you can interact with the full scope of MSFramework
 public final class MSFrameworkManager : NSObject
 {
-    fileprivate let msCoreDataStack = MSCoreDataStack()
+    let msCoreDataStack = MSCoreDataStack()
     let msDataSizePrinter = MSDataSizePrinter()
     
     ///The Data Downloader object for MSFramework

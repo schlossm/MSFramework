@@ -10,44 +10,57 @@
 public typealias MSDatabaseDataSource = MSFrameworkDataSource
 
 /**
- Used by MSFamework to covert a table and its attributes to its corresponding CoreData entities and attributes
+ Used by MSFamework to covert a MySQL table and its attributes to its corresponding CoreData entities and attributes
  
- One instance per table/entity.  Required to be a `class` to maintain compatibility with Objective-C
+ **One instance per table-entity pair**
  */
 public struct MySQLToCoreData
 {
+    /**
+     The table name in the web service's MySQL database
+     */
     public var databaseTableName : String
+    /**
+     The corresponsing entity's name in the application's CoreData model
+     */
     public var coreDataTableName : String
     
     /**
-     Used by MSFramework to convert downloaded table attributes to CoreData Entity's attributes.
+     Used by MSFramework to convert MySQL Table attributes to CoreData Entity attributes.
      
      **Format**
      
-     
-     `["downloadedAName":"CDAttributeName"]`
+     `["MySQLAttributeName":"CoreDataAttributeName"]`
+     - Note: The `CoreDataAttributeName` is case sensitive!
      */
     public var attributesToCDAttributes : [String : String]
 }
 
+/**
+ MSFramework's Data Source
+ 
+ The data source contains
+ * Login information for the MySQL database (and website if password protected directory is enabled)
+ * Website URLs to reach your web service
+ * Encryption code and IV for AES encryption
+ * An array of `MySQLToCoreData` objects that allow MSFramework to auto-save downloaded data
+ */
 public protocol MSFrameworkDataSource
 {
-    ///The username to log into a protected directory.  This value is only used if needed.
-    var websiteUserName     : String { get }
+    ///The username to log into a protected directory. This value is only used if needed.
+    var websiteUserName         : String { get }
     
-    ///The password to log into a protected directory.  This value is only used if needed.
-    var websiteUserPass     : String { get }
+    ///The password to log into a protected directory. This value is only used if needed.
+    var websiteUserPass         : String { get }
     
-    ///MySQL databases require user login and password to access the databse schema.  MSFramework assumes the login `websiteUserName` combined with this password
-    var databaseUserPass    : String { get }
-    
+    ///MySQL databases require user login and password to access the databse schema. MSFramework assumes the login `websiteUserName` combined with this password
+    var databaseUserPass        : String { get }
     
     ///The file name of your project's CoreData model
-    var coreDataModelName   : String { get }
-    
+    var coreDataModelName       : String { get }
     
     ///The base URL the application will be communicating with
-    var website             : String { get }
+    var website                 : String { get }
     
     /**
      The relative path to a file in the URL that takes a `POST` object containing `databaseUserPass`, `websiteUserName`, and an SQL statement and returns a JSON formatted object
@@ -57,7 +70,7 @@ public protocol MSFrameworkDataSource
      * `Username`
      * `SQLStatement`
      */
-    var readFile            : String { get }
+    var readFile                : String { get }
     
     /**
      The relative path to a file in the URL that takes a `POST` object containing `databaseUserPass`, `websiteUserName`, and an SQL statement and processes the SQL statement returning **"Success"** if the SQLStatement is successfully ran or **"Failure"** if it fails
@@ -67,19 +80,18 @@ public protocol MSFrameworkDataSource
      * `Username`
      * `SQLStatement`
      */
-    var writeFile           : String { get }
-    
+    var writeFile               : String { get }
     
     ///A String containing 32 characters ([A-Za-z0-9] & special characters) that is used to encrypt and decrypt data on device
-    var encryptionCode      : String { get }
+    var encryptionCode          : String { get }
     
     ///The Initialization Vector for encryption.  Should be exactly 16 characters in length
-    var iv                  : String { get }
+    var iv                      : String { get }
     
     /**
-     Used by MSFramework to convert between downloaded MySQL table structure and internal CoreData structure
+     Used by MSFramework to convert between downloaded a MySQL table structure and the application's internal CoreData structure
      
-     MSFramework only calls upon this variable when it cannot automatically determine the CoreData table name.
+     MSFramework uses a custom high-level API to attempt to automatically find the CoreData information.  If it cannot, MSFramework will call upon this variable to retrieve the right information
      */
     var databaseToCoreDataInfo  : [MySQLToCoreData] { get }
 }

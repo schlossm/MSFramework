@@ -73,6 +73,8 @@ public final class MSDataDownloader: NSObject, URLSessionDelegate, URLSessionTas
                         return
                     }
                     
+                    MSFrameworkManager.default.msCoreDataStack.storeDataInCoreData(returnArray, sqlStatement: sqlStatement)
+                
                     completion(returnArray, nil)
                 }
                 catch
