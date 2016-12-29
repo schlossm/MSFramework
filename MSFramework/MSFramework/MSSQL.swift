@@ -6,28 +6,127 @@
 //  Copyright © 2016 Michael Schloss. All rights reserved.
 //
 
+//MARK: - Constants
+
+/**
+ Denotes the `WHERE` statement's comparator is `MSSQLEquivalence.isNull` or `MSSQLEquivalence.isNotNull`
+ */
+let WhereStatementComparesNullString = "Where Statement is comparing a null statement."
+
 //MARK: - enums
 
+/**
+ Possible errors `MSSQL` could throw back at you
+ */
 public enum MSSQLError : Error
 {
-    case whereConditionCountsNotEquivelent, whereConditionsCannotBeEmpty, whereConditionsCannotBeEqual, cannotUseWildcardSpecifier, cannotUseEmptyValue, attributeLengthTooLong, conditionsMustBeEqual, conditionAlreadyExists, unexpectedValueFound
+    /**
+     This error is thrown when attribute == value
+     */
+    case whereConditionsCannotBeEqual
+    
+    /**
+     This error is thrown when '*' is used
+     */
+    case cannotUseWildcardSpecifier
+    
+    /**
+     This error is thrown when "" is used anywhere
+     */
+    case cannotUseEmptyValue
+    
+    /**
+     This error is thrown when attribute or table character count exceeds 64 characters
+     */
+    case attributeLengthTooLong
+    
+    /**
+     This error is thrown when the attributes count does not match the values count
+     */
+    case conditionsMustBeEqual
+    
+    /**
+     This error is thrown when an SQL statement is attempting to be overwritten
+     */
+    case conditionAlreadyExists
+    
+    /**
+     This error is thrown when MSSQL encounters a value it wasn't expecting.  This error is exclusively thrown during sanitization of malicious injections
+     */
+    case unexpectedValueFound
 }
 
+/**
+ The possible conjunctions for `WHERE` statements
+ 
+ - Note: `.none` does not insert " NONE" into the SQL Statement, it is used as a placeholder
+ */
 public enum MSSQLConjunction : String
 {
     case and = " AND", or = " OR", none = " NONE", andNot = " AND NOT", orNot = " OR NOT"
 }
 
+/**
+ The possible joins in SQL
+ */
 public enum MSSQLJoin : String
 {
-    case full = " FULL OUTER", natural = " NATURAL", left = " LEFT OUTER", right = " RIGHT OUTER", cross = " CROSS", inner = " INNER"
+    /**
+     Returns all rows from the left table and from the right table
+     
+     [Further Discussion](http://www.w3schools.com/Sql/sql_join_full.asp)
+     */
+    case full = " FULL OUTER"
+    
+    /**
+     Returns all rows from both tables as long as there is a match between the columns in both tables.  Automatically determines the equivalent columns from each table
+     
+     [Further Discussion](http://www.w3resource.com/sql/joins/natural-join.php)
+     */
+    case natural = " NATURAL"
+    
+    /**
+     Returns all rows from the left table, with the matching rows in the right table. The result is NULL in the right side when there is no match
+     
+     [Further Discussion](http://www.w3schools.com/Sql/sql_join_left.asp)
+     */
+    case left = " LEFT OUTER"
+    
+    /**
+     Returns all rows from the right table, with the matching rows in the left table. The result is NULL in the left side when there is no match
+     
+     [Further Discussion](http://www.w3schools.com/Sql/sql_join_right.asp)
+     */
+    case right = " RIGHT OUTER"
+    
+    /**
+     If no `WHERE` statement **is not** specified, this join returns all rows in the first table multiplied by all rows in the second table.  If a `WHERE` statement **is** specified, this join is synonymous with `.inner`
+     
+     [Further Discussion](http://www.w3resource.com/sql/joins/cross-join.php)
+     */
+    case cross = " CROSS"
+    
+    /**
+     Returns all rows from both tables as long as there is a match between the columns in both tables.  The columns from each table to match must be specified
+     
+     [Further Discussion](http://www.w3schools.com/Sql/sql_join_inner.asp)
+     */
+    case inner = " INNER"
 }
 
+/**
+ The possible comparators for `WHERE` statements
+ */
 public enum MSSQLEquivalence : String
 {
-    case equals = "=", notEquals = "!=", lessThan = "<", greaterThan = ">", lessThanOrEqual = "<=", greaterThanOrEqual = ">=", like = " LIKE ", notLike = " NOT LIKE ", between = " BETWEEN ", notBetween = " NOT BETWEEN ", `in` = " IN ", notIn = " NOT IN "
+    case equals = "=", notEquals = "!=", lessThan = "<", greaterThan = ">", lessThanOrEqual = "<=", greaterThanOrEqual = ">="
+    case like = " LIKE ", notLike = " NOT LIKE ", between = " BETWEEN ", notBetween = " NOT BETWEEN ", `in` = " IN ", notIn = " NOT IN "
+    case isNull = " IS NULL", isNotNull = " IS NOT NULL"
 }
 
+/**
+ The possible directions an attribute can be ordered
+ */
 public enum MSSQLOrderBy : String
 {
     case ascending = " ASC", descending = " DESC"
@@ -35,17 +134,41 @@ public enum MSSQLOrderBy : String
 
 //MARK: - Helper structs
 
+/**
+ A helper struct to combine an attribute-value pair
+ */
 public struct MSSQLClause
 {
+    /**
+     The database table's attribute name
+     */
     let attribute   : String
+    
+    /**
+     The value in a row
+     */
     let value       : String
 }
 
+/**
+ Defines a `JOIN` statement
+ */
 public struct Join
 {
+    /**
+     The table to join on
+     */
     let table       : String
-    let attribute   : String
-    let value       : String
+    
+    /**
+     The first table's attribute to join on
+     */
+    let tableOneAttribute   : String
+    
+    /**
+     `.table`'s attribute to join on
+     */
+    let tableTwoAttribute       : String
 }
 
 fileprivate struct InternalJoin
@@ -55,16 +178,44 @@ fileprivate struct InternalJoin
     let clause      : MSSQLClause
 }
 
+/**
+ Defines an `ORDERED BY` statement
+ */
 public struct OrderBy
 {
+    /**
+     The attribute to sort along
+     */
     var attribute   : String
+    
+    /**
+     The direction in which to order the specified attribute
+     */
     var orderBy     : MSSQLOrderBy
 }
 
+/**
+ Defines a `WHERE` statement i.e. "`WHERE` ...X..."
+ 
+ - Note: Please use `WhereStatementComparesNullString` as the value of `.clause` if you plan to use `.isNull` or `isNotNull` for the equivalence
+ */
 public struct Where
 {
+    /**
+     The conjunction to join this `WHERE` statement to the next one
+     */
     let conjunction : MSSQLConjunction
+    
+    /**
+     The equivalence comparator to compare the attribute and value
+     */
     let equivalence : MSSQLEquivalence
+    
+    /**
+     The attribute and value.
+     
+     - Note: Please use `WhereStatementComparesNullString` as the value if you plan to use `.isNull` or `isNotNull` for the equivalence
+     */
     let clause      : MSSQLClause
 }
 
@@ -123,12 +274,20 @@ public final class MSSQL
                 let left = whereStatement.clause.attribute
                 var right = whereStatement.clause.value
                 
-                if right.contains(" ") || Int(right) == nil
+                if whereStatement.equivalence != .isNull && whereStatement.equivalence != .isNotNull
                 {
-                    right = "'" + right + "'"
+                    
+                    if right.contains(" ") || Int(right) == nil
+                    {
+                        right = "'" + right + "'"
+                    }
+                    
+                    returnString += " " + left + whereStatement.equivalence.rawValue + right
                 }
-                
-                returnString += " " + left + whereStatement.equivalence.rawValue + right
+                else
+                {
+                    returnString += " " + left + whereStatement.equivalence.rawValue
+                }
                 
                 if whereStatement.conjunction != .none
                 {
@@ -137,6 +296,7 @@ public final class MSSQL
             }
             
             guard orderByStatements.isEmpty == false else { return }
+            returnString += " ORDERED BY"
             if orderByStatements.count == 1
             {
                 for orderByStatement in orderByStatements
@@ -264,7 +424,14 @@ public final class MSSQL
         }
         for row in selectRows
         {
-            returnString += "`" + row + "`,"
+            if row.contains("(") == false && row.contains(")") == false
+            {
+                returnString += "`" + row + "`,"
+            }
+            else
+            {
+                returnString += row + ","
+            }
         }
         
         returnString = (returnString as NSString).substring(to: returnString.characters.count - 1) + " FROM "
@@ -583,13 +750,13 @@ public final class MSSQL
         for join in joins
         {
             try check(attribute: join.table)
-            try check(attribute: join.attribute)
-            try check(value: join.value)
+            try check(attribute: join.tableOneAttribute)
+            try check(value: join.tableTwoAttribute)
         }
         
         for joinn in joins
         {
-            joinStatements.append(InternalJoin(joinType: join, table: joinn.table, clause: MSSQLClause(attribute: joinn.attribute, value: joinn.value)))
+            joinStatements.append(InternalJoin(joinType: join, table: joinn.table, clause: MSSQLClause(attribute: joinn.tableOneAttribute, value: joinn.tableTwoAttribute)))
         }
         
         return self
@@ -599,6 +766,7 @@ public final class MSSQL
     
     /**
      WHERE ...X... statement
+     - Note: Please use `WhereStatementComparesNullString` as the value if you plan to use `.isNull` or `isNotNull` for the equivalence
      - Parameter equivalence: The equivalence of the statement
      - Parameter leftHandSide: The left hand side of the clause
      - Parameter rightHandSide: The right hand side of the clause
@@ -610,7 +778,10 @@ public final class MSSQL
         guard whereStatements.isEmpty else { throw MSSQLError.conditionAlreadyExists }
         guard leftHandSide != rightHandSide else { throw MSSQLError.whereConditionsCannotBeEqual }
         try check(attribute: leftHandSide)
-        try check(value: rightHandSide, equivalence: equivalence)
+        if rightHandSide != WhereStatementComparesNullString
+        {
+            try check(value: rightHandSide, equivalence: equivalence)
+        }
         
         whereStatements = [Where(conjunction: .none, equivalence: equivalence, clause: MSSQLClause(attribute: leftHandSide, value: rightHandSide))]
         
@@ -619,6 +790,7 @@ public final class MSSQL
     
     /**
      WHERE ...X...[, ...X...] statement
+     - Note: Please use `WhereStatementComparesNullString` as the value if you plan to use `.isNull` or `isNotNull` for the equivalence
      - Parameter equivalence: The equivalence of each statement
      - Parameter leftHandSide: The left hand side of the clause
      - Parameter rightHandSide: The right hand side of the clause
@@ -636,7 +808,10 @@ public final class MSSQL
         }
         for rightHandSide in rightHandSides
         {
-            try check(value: rightHandSide, equivalence: equivalence)
+            if rightHandSide != WhereStatementComparesNullString
+            {
+                try check(value: rightHandSide, equivalence: equivalence)
+            }
         }
         
         for index in 0..<leftHandSides.count - 1
@@ -655,6 +830,7 @@ public final class MSSQL
     
     /**
      WHERE ...X...[, ...Y...] statement
+     - Note: Please use `WhereStatementComparesNullString` as the value if you plan to use `.isNull` or `isNotNull` for the equivalence
      - Parameter custom: A collection of `Where` structs.  The last `Where` struct **MUST** have `.none` as the conjunction
      - Returns: An instance of `MSSQL`
      - Throws: `MSSQLError` If a parameter is null, already exists, `*` is used as the `table` or `leftHandSide` parameter of any `Where`, is empty, any `leftHandSide` is greater than 64 characters in length, or if the last `Where` struct does not have `.none` as its conjunction
@@ -667,7 +843,10 @@ public final class MSSQL
         for `where` in custom
         {
             try check(attribute: `where`.clause.attribute)
-            try check(value: `where`.clause.value, equivalence: `where`.equivalence)
+            if `where`.clause.value != WhereStatementComparesNullString
+            {
+                try check(value: `where`.clause.value, equivalence: `where`.equivalence)
+            }
             guard `where`.clause.attribute != `where`.clause.value else { throw MSSQLError.whereConditionsCannotBeEqual }
         }
         
