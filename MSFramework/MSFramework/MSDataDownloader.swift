@@ -93,7 +93,7 @@ public final class MSDataDownloader: NSObject, URLSessionDelegate, URLSessionTas
     public func urlSession(_ session: URLSession, didReceive challenge: URLAuthenticationChallenge, completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void)
     {
         guard MSFrameworkManager.default.dataSource != nil else { fatalError("You must set a dataSource before querying any MSDatabase functionality.") }
-        let credential = URLCredential(user: MSFrameworkManager.default.dataSource.websiteUserName!, password: MSFrameworkManager.default.dataSource.websiteUserPass!, persistence: URLCredential.Persistence.forSession)
+        let credential = URLCredential(user: MSFrameworkManager.default.dataSource.websiteUserName, password: MSFrameworkManager.default.dataSource.websiteUserPass, persistence: URLCredential.Persistence.forSession)
         
         completionHandler(.useCredential, credential)
     }
@@ -101,7 +101,7 @@ public final class MSDataDownloader: NSObject, URLSessionDelegate, URLSessionTas
     public func urlSession(_ session: URLSession, task: URLSessionTask, didReceive challenge: URLAuthenticationChallenge, completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void)
     {
         guard MSFrameworkManager.default.dataSource != nil else { fatalError("You must set a dataSource before querying any MSDatabase functionality.") }
-        let credential = URLCredential(user: MSFrameworkManager.default.dataSource.websiteUserName!, password: MSFrameworkManager.default.dataSource.websiteUserPass!, persistence: URLCredential.Persistence.forSession)
+        let credential = URLCredential(user: MSFrameworkManager.default.dataSource.websiteUserName, password: MSFrameworkManager.default.dataSource.websiteUserPass, persistence: URLCredential.Persistence.forSession)
         
         completionHandler(.useCredential, credential)
     }

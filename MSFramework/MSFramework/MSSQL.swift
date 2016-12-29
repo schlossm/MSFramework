@@ -28,6 +28,11 @@ public enum MSSQLEquivalence : String
     case equals = "=", notEquals = "!=", lessThan = "<", greaterThan = ">", lessThanOrEqual = "<=", greaterThanOrEqual = ">="
 }
 
+public enum MSSQLOrderBy : String
+{
+    case ascending = " ASC", descending = " DESC"
+}
+
 //MARK: - Helper structs
 
 public struct MSSQLClause
@@ -48,6 +53,12 @@ fileprivate struct InternalJoin
     let joinType    : MSSQLJoin
     let table       : String
     let clause      : MSSQLClause
+}
+
+public struct OrderBy
+{
+    var attribute   : String
+    var orderBy     : MSSQLOrderBy
 }
 
 public struct Where
@@ -72,6 +83,10 @@ public final class MSSQL
     private     var updateStatements    = [MSSQLClause]()
     internal    var appendedSQL         = [MSSQL]()
     
+    private     var orderByStatements   = [OrderBy]()
+    
+    private     var distinctSELECT      = false
+    
     var formattedStatement : String
     {
         return formatted()
@@ -93,7 +108,7 @@ public final class MSSQL
         
         
         //WHERE statements
-        func insertWhereStatements()
+        func insertWhereAndOrderByStatements()
         {
             guard whereStatements.isEmpty == false else { return }
             
@@ -114,6 +129,34 @@ public final class MSSQL
                 {
                     returnString += whereStatement.conjunction.rawValue
                 }
+            }
+            
+            guard orderByStatements.isEmpty == false else { return }
+            if orderByStatements.count == 1
+            {
+            for orderByStatement in orderByStatements
+            {
+                let attribute = orderByStatement.attribute
+                let direction = orderByStatement.orderBy.rawValue
+                
+                returnString += " " + attribute + direction
+            }
+            }
+            else
+            {
+                for index in 0..<orderByStatements.count - 1
+                {
+                    let orderByStatement = orderByStatements[index]
+                    let attribute = orderByStatement.attribute
+                    let direction = orderByStatement.orderBy.rawValue
+                    
+                    returnString += " " + attribute + direction + ","
+                }
+                let orderByStatement = orderByStatements[orderByStatements.count - 1]
+                let attribute = orderByStatement.attribute
+                let direction = orderByStatement.orderBy.rawValue
+                
+                returnString += " " + attribute + direction
             }
         }
         
@@ -152,7 +195,7 @@ public final class MSSQL
             
             returnString = (returnString as NSString).substring(to: returnString.characters.count - 2)
             
-            insertWhereStatements()
+            insertWhereAndOrderByStatements()
             
             returnString += ";"
             
@@ -198,6 +241,10 @@ public final class MSSQL
         guard selectRows.isEmpty == false else { return returnString }
         
         returnString = "SELECT "
+        if distinctSELECT == true
+        {
+            returnString += "DISTINCT "
+        }
         for row in selectRows
         {
             returnString += "`" + row + "`,"
@@ -228,7 +275,7 @@ public final class MSSQL
             }
         }
         
-        insertWhereStatements()
+        insertWhereAndOrderByStatements()
         
         returnString += ";"
         
@@ -275,26 +322,28 @@ public final class MSSQL
     /**
      SELECT statement with 1 row
      - Parameter attribute: the attribute to request
+     - Parameter distinct: if the query should return only distinct rows or not.  Defaults to `false`
      - Returns: An instance of `MSSQL`
      - Throws: `MSSQLError`: If no attribute specified, `*` is used, is empty, or is greater than 64 characters in length
      */
-    public func select(_ attribute: String) throws -> MSSQL
+    public func select(_ attribute: String, distinct: Bool = false) throws -> MSSQL
     {
         guard selectRows.isEmpty else { throw MSSQLError.conditionAlreadyExists }
         try check(attribute: attribute)
         
+        distinctSELECT = distinct
         selectRows = [attribute]
-        
-        return self;
+        return self
     }
     
     /**
      SELECT statement with multiple rows
      - Parameter attributes: the attributes to request
+     - Parameter distinct: if the query should return only distinct rows or not.  Defaults to `false`
      - Returns: An instance of `MSSQL`
      - Throws: `MSSQLError`: If no attributes specified, `*` is used, is empty, or any attribute is greater than 64 characters in length
      */
-    public func select(_ attributes: [String]) throws -> MSSQL
+    public func select(_ attributes: [String], distinct: Bool = false) throws -> MSSQL
     {
         guard selectRows.isEmpty else { throw MSSQLError.conditionAlreadyExists }
         for attribute in attributes
@@ -302,6 +351,7 @@ public final class MSSQL
             try check(attribute: attribute)
         }
         
+        distinctSELECT = distinct
         selectRows = attributes
         return self
     }
@@ -317,7 +367,6 @@ public final class MSSQL
     public func from(_ table: String) throws -> MSSQL
     {
         guard fromTables.isEmpty else { throw MSSQLError.conditionAlreadyExists }
-        
         try check(attribute: table)
         
         fromTables = [table]
@@ -550,6 +599,40 @@ public final class MSSQL
         
         whereStatements = custom
         
+        return self
+    }
+    
+    /**
+     ORDER BY ... ASC|DESC statement
+     - Parameter attribute: The attribute to order by
+     - Parameter direction: Order ascending or descending
+     - Returns: An instance of `MSSQL`
+     - Throws: `MSSQLError` If a parameter is null, already exists, `*` is used as the `attribute` parameter, is empty, the `attribute` is greater than 64 characters in length
+     */
+    public func orderBy(_ attribute: String, direction: MSSQLOrderBy) throws -> MSSQL
+    {
+        guard orderByStatements.isEmpty else { throw MSSQLError.conditionAlreadyExists }
+        try check(attribute: attribute)
+        
+        orderByStatements = [OrderBy(attribute: attribute, orderBy: direction)]
+        return self
+    }
+    
+    /**
+     ORDER BY ... ASC|DESC[, ... ASC|DESC] statement
+     - Parameter attributes: The attributes and directions to order by
+     - Returns: An instance of `MSSQL`
+     - Throws: `MSSQLError` If a parameter is null, already exists, `*` is used as the `attribute` parameter of any `OrderBy`, is empty, the `attribute` of any `OrderBy` is greater than 64 characters in length
+     */
+    public func orderBy(_ attributes: [OrderBy]) throws -> MSSQL
+    {
+        guard orderByStatements.isEmpty else { throw MSSQLError.conditionAlreadyExists }
+        for att in attributes
+        {
+            try check(attribute: att.attribute)
+        }
+        
+        orderByStatements = attributes
         return self
     }
 }

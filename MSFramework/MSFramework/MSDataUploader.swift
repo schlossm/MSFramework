@@ -71,7 +71,7 @@ public final class MSDataUploader: NSObject, URLSessionDelegate
     public func urlSession(_ session: URLSession, didReceive challenge: URLAuthenticationChallenge, completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void)
     {
         guard MSFrameworkManager.default.dataSource != nil else { fatalError("You must set a dataSource before querying any MSDatabase functionality.") }
-        let credential = URLCredential(user: MSFrameworkManager.default.dataSource.websiteUserName!, password: MSFrameworkManager.default.dataSource.websiteUserPass!, persistence: URLCredential.Persistence.forSession)
+        let credential = URLCredential(user: MSFrameworkManager.default.dataSource.websiteUserName, password: MSFrameworkManager.default.dataSource.websiteUserPass, persistence: URLCredential.Persistence.forSession)
         
         completionHandler(Foundation.URLSession.AuthChallengeDisposition.useCredential, credential)
     }

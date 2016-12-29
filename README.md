@@ -5,7 +5,7 @@ iOS Framework for pulling JSON data using `POST` from a MySQL database and stori
 
 ---
 
-MSFramework is written in Swift 3, which requires Xcode 8+.  MSFramework is currently _**not**_ compatible with Objective-C
+**PLEASE READ**: MSFramework is written in Swift 3, which requires Xcode 8+.  MSFramework is _**not**_ compatible with Objective-C, due to it using internal Swift types that are currently unrepresentable in Objective-C.
 
 ---
 
@@ -22,41 +22,15 @@ MSFramework is compatible with macOS, iOS, tvOS, and watchOS
 ##Use
 MSFramework is intended to be used opaquely.  While the source code is yours to tamper with, you should not unless you know what you're doing.
 
-Swift
+**Swift**
 
 ```Swift
-class ProjectDatabase
+class ProjectDatabase : [...,] MSFrameworkDataSource
 {
 	var msFramework = MSFrameworkManager.default
 	msFramework.dataSource = self
 	...
 }
-```
----
-Objective-C -- Not Functional
-
-```Objective-C
-@import MSFramework;
-
-@interface ProjectDatabase : NSObject <MSFrameworkDataSource>
-
-	@property (nonatomic, strong) MSFrameworkManager *msFramework;
-	
-	...
-@end
-	
--------------
-
-@implementation ProjectDatabase : NSObject
-	
-	- (id) init
-	{
-		msFramework = [MSFrameworkManager default];
-		[msFramework setDataSource: self];
-		...
-	}
-	...
-@end
 ```
 
 MSFramework is initialized with the MSFrameworkManager class.  the `default` class property gives you access to the singleton object for MSFramework.
@@ -65,7 +39,11 @@ MSFramework requires a data source that complies with the `MSFrameworkDataSource
 
 ##SQL
 
-MSFramework has its own SQL class, `MSSQL`, that contains any SQL query you may need to perform.  This class is overload and security safe, and will automatically sanitize its input. MSFramework uses this class for processing SQL queries up to a database.  See `MSSQL` for more info
+MSFramework has its own SQL class: `MSSQL`. This class contains all SQL `SELECT`, `FROM`, `JOIN`, `INSERT`, `UPDATE`, and `WHERE` combinations.  This class is overload and security safe, and will automatically sanitize its input, throwing catchable errors when it encounters illegal text. MSFramework uses this class for processing SQL queries up to a database.
+
+See the `MSSQL` class for more info.
+
+**NOTE**: `MSSQL` currently does not allow nested SQL statements.  This will come in the future.
 
 ##Classes
 
@@ -84,7 +62,7 @@ MSFramework contains the following classes
 	* The CoreData class for MSDatabase
 * `MSFrameworkDataSource`
 	* Contains variables that MSFramework will call upon when querying your web service.  If this protocol is not implemented, MSFramework will terminate your run 
-* CryptoSwift
+* `CryptoSwift`
 	* A Swift Framework for encrypting data using an AES 256-bit algorithm.  Credit goes to [Marcin Krzyzanowski] (https://github.com/krzyzanowskim/CryptoSwift)
 
 
