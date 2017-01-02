@@ -12,10 +12,15 @@
     import Darwin
 #endif
 
-struct RandomBytesSequence: Sequence {
-    let size: Int
+public struct RandomBytesSequence: Sequence {
+    public let size: Int
+    
+    public init(size: Int)
+    {
+        self.size = size
+    }
 
-    func makeIterator() -> AnyIterator<UInt8> {
+    public func makeIterator() -> AnyIterator<UInt8> {
         var count = 0
         return AnyIterator<UInt8>.init({ () -> UInt8? in
             if count >= self.size {

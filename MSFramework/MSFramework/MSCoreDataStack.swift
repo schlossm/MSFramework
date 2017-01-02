@@ -11,10 +11,12 @@ import CoreData
 ///The CoreData manager for MSFramework
 class MSCoreDataStack
 {
-    private var persistentContainer     : NSPersistentContainer
+    private var persistentContainer     : NSPersistentContainer!
     var managedObjectContext            : NSManagedObjectContext?
     
-    init()
+    init() { }
+    
+    func load()
     {
         persistentContainer = NSPersistentContainer(name: MSFrameworkManager.default.dataSource.coreDataModelName)
         persistentContainer.loadPersistentStores(completionHandler: { [unowned self] (storeDescription, error) in

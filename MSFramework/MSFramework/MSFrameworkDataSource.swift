@@ -82,11 +82,8 @@ public protocol MSFrameworkDataSource
      */
     var writeFile               : String { get }
     
-    ///A String containing 32 characters ([A-Za-z0-9] & special characters) that is used to encrypt and decrypt data on device
-    var encryptionCode          : String { get }
-    
-    ///The Initialization Vector for encryption.  Should be exactly 16 characters in length
-    var iv                      : String { get }
+    ///Used to encrypt and decrypt data on device
+    var encryptionCode          : Array<UInt8> { get }
     
     /**
      Used by MSFramework to convert between downloaded a MySQL table structure and the application's internal CoreData structure

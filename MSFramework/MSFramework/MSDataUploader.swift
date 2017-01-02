@@ -33,8 +33,9 @@ public final class MSDataUploader: NSObject, URLSessionDelegate
      - Parameter sqlStatement: an MSSQL object that contains a built SQL statement
      - Parameter completion: A block to be called when `website`+`writeFile` has returned either **Success** or **Failure**
      */
-    public func upload(sqlStatement: MSSQL, completion: @escaping MSFrameworkUploadCompletion)
+    public func upload(sqlStatement: MSSQL, completion: @escaping MSFrameworkUploadCompletion = { _ in })
     {
+        debugLog(sqlStatement.formattedStatement)
         guard MSFrameworkManager.default.dataSource != nil else { fatalError("You must set a dataSource before querying any MSDatabase functionality.") }
         let url = URL(string: MSFrameworkManager.default.dataSource.website)!.appendingPathComponent(MSFrameworkManager.default.dataSource.writeFile)
         
@@ -50,8 +51,8 @@ public final class MSDataUploader: NSObject, URLSessionDelegate
         let uploadRequest = uploadSession.dataTask(with: request, completionHandler: { (returnData, response, error) -> Void in
             DispatchQueue.main.async(execute: { () -> Void in
                 
-                debugLog("Error: \(error!)")
-                debugLog("Response: \(response!)")
+                debugLog("Error: \(error)")
+                debugLog("Response: \(response)")
                 
                 guard response?.url?.absoluteString.hasPrefix(MSFrameworkManager.default.dataSource.website) == true else { completion(false); return }
                 guard error == nil && returnData != nil else { completion(false); return }

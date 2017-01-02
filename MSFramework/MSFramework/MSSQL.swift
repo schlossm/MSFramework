@@ -254,6 +254,8 @@ public final class MSSQL
     
     private     var insertRows          = [String]()
     private     var insertValues        = [String]()
+    private     var duplicateKeys       = [String]()
+    private     var duplicateValues     = [String]()
     
     private     var updateStatements    = [MSSQLClause]()
     
@@ -422,9 +424,20 @@ public final class MSSQL
                 }
             }
             
-            returnString = (returnString as NSString).substring(to: returnString.characters.count - 1) + ");"
+            returnString = (returnString as NSString).substring(to: returnString.characters.count - 1) + ")"
             
-            //insertAppendedStatements()
+            if duplicateKeys.isEmpty == false
+            {
+                returnString += " ON DUPLICATE KEY UPDATE "
+                for row in duplicateKeys
+                {
+                    returnString += "`" + row + "`='\(duplicateValues[duplicateKeys.index(of: row)!])',"
+                }
+                
+                returnString = (returnString as NSString).substring(to: returnString.characters.count - 1)
+            }
+            
+            returnString += ";"
             
             return returnString
         }
@@ -726,6 +739,35 @@ public final class MSSQL
         fromTables = [table]
         insertRows = attributes
         insertValues = values
+        
+        return self
+    }
+    
+    /**
+     INSERT ... ON DUPLICATE KEY UPDATE Constructor
+     
+     Use this statement in conjuction with WHERE and/or LIMIT to specify which row to update if not 100% unique.
+     
+     - Parameter attributes: The attributes to update
+     - Parameter values: The values to update to
+     - Returns: An instance of `MSSQL`
+     - Throws `MSSQLError` If a parameter is null, already exists, values and attributes do not match in size, `*` is used, is empty, or any attribute is greater than 64 characters in length
+     */
+    public func onDuplicateKey(attributes: [String], values: [String]) throws -> MSSQL
+    {
+        guard !insertRows.isEmpty && !insertValues.isEmpty && duplicateKeys.isEmpty && duplicateValues.isEmpty else { throw MSSQLError.conditionAlreadyExists }
+        
+        for attribute in attributes
+        {
+            try check(attribute)
+        }
+        for value in values
+        {
+            try check(value: value)
+        }
+        
+        duplicateKeys = attributes
+        duplicateValues = values
         
         return self
     }

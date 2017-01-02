@@ -32,6 +32,8 @@ public final class MSFrameworkManager : NSObject
     let msCoreDataStack = MSCoreDataStack()
     let msDataSizePrinter = MSDataSizePrinter()
     
+    fileprivate var iv = AES.randomIV(16)
+    
     ///The Data Downloader object for MSFramework
     public let dataDownloader : MSDataDownloader
     
@@ -40,6 +42,15 @@ public final class MSFrameworkManager : NSObject
     
     ///The data source for `MSDatabase` contains all necessary information for MSFramework to communicate with your application's web service
     public var dataSource : MSFrameworkDataSource!
+        {
+        didSet
+        {
+            if dataSource.coreDataModelName != ""
+            {
+                msCoreDataStack.load()
+            }
+        }
+    }
     
     
     ///MSFramework's current NSManagedObjectContext object.  Returns nil if the Persistent Store hasn't finished loading yet
@@ -77,12 +88,26 @@ extension MSFrameworkManager
     public func decrypt(string: String) -> String
     {
         guard dataSource != nil else { fatalError("You must set a dataSource before querying any MSDatabase functionality.") }
-        guard dataSource.encryptionCode.characters.count == 32 else { fatalError("The encryption code MUST be 32 characters.") }
+        guard dataSource.encryptionCode.count == 32 else { fatalError("The encryption code MUST be 32 characters.") }
         
         let iv = (string as NSString).substring(to: 16)
         guard var data = (string as NSString).substring(from: 16).hexadecimal else { return string }
         
-        let aes = try! AES(key: dataSource.encryptionCode, iv: iv)
+        
+        var decryptedData = Data(capacity: iv.characters.count / 2)
+        
+        let regex = try! NSRegularExpression(pattern: "[0-9a-f]{1,2}", options: .caseInsensitive)
+        regex.enumerateMatches(in: iv, options: [], range: NSMakeRange(0, iv.characters.count)) { match, flags, stop in
+            let byteString = (iv as NSString).substring(with: match!.range)
+            var num = UInt8(byteString, radix: 16)!
+            decryptedData.append(&num, count: 1)
+        }
+        guard decryptedData.count > 0 else
+        {
+            return ""
+        }
+        
+        let aes = try! AES(key: dataSource.encryptionCode, iv: decryptedData.bytes, blockMode: .CBC, padding: PKCS7())
         data = try! Data(bytes: aes.decrypt(data.bytes))
         return NSString(data: data, encoding: String.Encoding.ascii.rawValue)! as String
     }
@@ -93,12 +118,11 @@ extension MSFrameworkManager
     public func encrypt(string: String) -> String
     {
         guard dataSource != nil else { fatalError("You must set a dataSource before querying any MSDatabase functionality.") }
-        guard dataSource.encryptionCode.characters.count == 32 else { fatalError("The encryption code MUST be 32 characters.") }
+        guard dataSource.encryptionCode.count == 32 else { fatalError("The encryption code MUST be 32 characters.") }
         
         let data = string.data(using: String.Encoding.ascii)! as Data
-        
-        let aes = try! AES(key: dataSource.encryptionCode, iv: dataSource.iv)
-        return try! dataSource.iv + Data(bytes: aes.encrypt(data.bytes)).hexEncoded
+        let aes = try! AES(key: dataSource.encryptionCode, iv: iv, blockMode: .CBC, padding: PKCS7())
+        return try! iv.toHexString() + Data(bytes: aes.encrypt(data.bytes)).hexEncoded
     }
     
     ///Encrypts an object using an AES 256-bit algorithm
@@ -107,15 +131,15 @@ extension MSFrameworkManager
     public func encrypt(object: Any) -> String
     {
         guard dataSource != nil else { fatalError("You must set a dataSource before querying any MSDatabase functionality.") }
-        guard dataSource.encryptionCode.characters.count == 32 else { fatalError("The encryption code MUST be 32 characters.") }
+        guard dataSource.encryptionCode.count == 32 else { fatalError("The encryption code MUST be 32 characters.") }
         
         let data = NSMutableData()
         let archiver = NSKeyedArchiver(forWritingWith: data)
         archiver.encode(object, forKey: "object")
         archiver.finishEncoding()
         
-        let aes = try! AES(key: dataSource.encryptionCode, iv: dataSource.iv)
-        return try! dataSource.iv + Data(bytes: aes.encrypt((data as Data).bytes)).hexEncoded
+        let aes = try! AES(key: dataSource.encryptionCode, iv: iv, blockMode: .CBC, padding: PKCS7())
+        return try! iv.toHexString() + Data(bytes: aes.encrypt((data as Data).bytes)).hexEncoded
     }
     
     ///Decrypts an AES 256-bit encrypted object
@@ -124,12 +148,25 @@ extension MSFrameworkManager
     public func decrypt(object: String) -> Any?
     {
         guard dataSource != nil else { fatalError("You must set a dataSource before querying any MSDatabase functionality.") }
-        guard dataSource.encryptionCode.characters.count == 32 else { fatalError("The encryption code MUST be 32 characters.") }
+        guard dataSource.encryptionCode.count == 32 else { fatalError("The encryption code MUST be 32 characters.") }
         
         let iv = (object as NSString).substring(to: 16)
         guard var data = (object as NSString).substring(from: 16).hexadecimal else { return object }
         
-        let aes = try! AES(key: dataSource.encryptionCode, iv: iv)
+        var decryptedData = Data(capacity: iv.characters.count / 2)
+        
+        let regex = try! NSRegularExpression(pattern: "[0-9a-f]{1,2}", options: .caseInsensitive)
+        regex.enumerateMatches(in: iv, options: [], range: NSMakeRange(0, iv.characters.count)) { match, flags, stop in
+            let byteString = (iv as NSString).substring(with: match!.range)
+            var num = UInt8(byteString, radix: 16)!
+            decryptedData.append(&num, count: 1)
+        }
+        guard decryptedData.count > 0 else
+        {
+            return ""
+        }
+        
+        let aes = try! AES(key: dataSource.encryptionCode, iv: decryptedData.bytes, blockMode: .CBC, padding: PKCS7())
         data = try! Data(bytes: aes.decrypt(data.bytes))
         
         let unarchiver = NSKeyedUnarchiver(forReadingWith: data)
