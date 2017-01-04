@@ -601,7 +601,7 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = "";
 				SKIP_INSTALL = YES;
-				SUPPORTED_PLATFORMS = "macosx appletvos watchos iphoneos";
+				SUPPORTED_PLATFORMS = "macosx appletvos watchos iphoneos watchsimulator iphonesimulator appletvsimulator";
 				SWIFT_OPTIMIZATION_LEVEL = "-Owholemodule";
 				SWIFT_VERSION = 3.0;
 				TVOS_DEPLOYMENT_TARGET = 10.1;
@@ -629,7 +629,7 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = "";
 				SKIP_INSTALL = YES;
-				SUPPORTED_PLATFORMS = "macosx appletvos watchos iphoneos";
+				SUPPORTED_PLATFORMS = "macosx appletvos watchos iphoneos watchsimulator iphonesimulator appletvsimulator";
 				SWIFT_VERSION = 3.0;
 				TVOS_DEPLOYMENT_TARGET = 10.1;
 				WATCHOS_DEPLOYMENT_TARGET = 3.1;
