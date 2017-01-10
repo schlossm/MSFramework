@@ -91,4 +91,5 @@ public protocol MSFrameworkDataSource
      MSFramework uses a custom high-level API to attempt to automatically find the CoreData information.  If it cannot, MSFramework will call upon this variable to retrieve the right information
      */
     var databaseToCoreDataInfo  : [MySQLToCoreData] { get }
+    var wantsCustomCDControl    : Bool { get }
 }

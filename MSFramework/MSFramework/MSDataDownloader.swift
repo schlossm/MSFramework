@@ -31,6 +31,7 @@ public final class MSDataDownloader: NSObject, URLSessionDelegate, URLSessionTas
     ///- Parameter completion: A block to be called when all data has been downloaded
     public func download(sqlStatement: MSSQL, completion: @escaping MSFrameworkDownloadCompletion)
     {
+        debugLog(sqlStatement.formattedStatement)
         guard MSFrameworkManager.default.dataSource != nil else { fatalError("You must set a dataSource before querying any MSDatabase functionality.") }
         let url = URL(string: MSFrameworkManager.default.dataSource.website)!.appendingPathComponent(MSFrameworkManager.default.dataSource.readFile)
         
@@ -73,8 +74,11 @@ public final class MSDataDownloader: NSObject, URLSessionDelegate, URLSessionTas
                         return
                     }
                     
-                    MSFrameworkManager.default.msCoreDataStack.storeDataInCoreData(returnArray, sqlStatement: sqlStatement)
-                
+                    if MSFrameworkManager.default.dataSource.wantsCustomCDControl == false
+                    {
+                        MSFrameworkManager.default.msCoreDataStack.storeDataInCoreData(returnArray, sqlStatement: sqlStatement)
+                    }
+                    
                     completion(returnArray, nil)
                 }
                 catch

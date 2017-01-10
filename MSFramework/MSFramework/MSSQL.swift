@@ -503,7 +503,7 @@ public final class MSSQL
         if attribute.contains("*")          { throw MSSQLError.cannotUseWildcardSpecifier }
         if attribute == ""                  { throw MSSQLError.cannotUseEmptyValue }
         
-        let specifiers = ["=", "!=", "<", ">", " NATURAL", " OUTER", " CROSS", " INNER", ",", "\"", "'", " LIKE", " NOT", " ASC", " DESC", "SELECT ", "FROM ", "JOIN ", "WHERE ", "ORDER BY", "IN ", "BETWEEN ", " AND", " OR"]
+        let specifiers = ["=", "!=", "<", ">", " NATURAL", " OUTER", " CROSS", " INNER", "\"", "'", " LIKE", " NOT", " ASC", " DESC", "SELECT ", "FROM ", "JOIN ", "WHERE ", "ORDER BY", "IN ", "BETWEEN ", " AND", " OR"]
         for specifier in specifiers
         {
             if attribute.uppercased().contains(specifier) { throw MSSQLError.unexpectedValueFound }
