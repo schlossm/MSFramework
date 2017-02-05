@@ -47,8 +47,8 @@ public final class MSDataDownloader: NSObject, URLSessionDelegate, URLSessionTas
         let downloadRequest = downloadSession.dataTask(with: request, completionHandler: { (returnData, response, error) in
             DispatchQueue.main.async(execute: { () -> Void in
                 
-                debugLog("Response: \(response)")
-                debugLog("Error: \(error)")
+                debugLog("Response: \(String(describing: response))")
+                debugLog("Error: \(String(describing: error))")
                 
                 guard response?.url?.absoluteString.hasPrefix(MSFrameworkManager.default.dataSource.website) == true else { completion(nil, NSError(domain: "com.Michael-Schloss.MSFramework.InvalidRedirect", code: 4, userInfo: nil)); return }
                 

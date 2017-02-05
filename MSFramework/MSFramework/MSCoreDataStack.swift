@@ -20,7 +20,7 @@ class MSCoreDataStack
     {
         persistentContainer = NSPersistentContainer(name: MSFrameworkManager.default.dataSource.coreDataModelName)
         persistentContainer.loadPersistentStores(completionHandler: { [unowned self] (storeDescription, error) in
-            if let error = error as? NSError
+            if let error = error as NSError?
             {
                 print("There's been an error loading the container! Error Details: \(error), \(error.userInfo)")
             }

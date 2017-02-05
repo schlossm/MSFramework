@@ -165,6 +165,12 @@ public struct MSSQLClause
      The value in a row
      */
     let value       : String
+    
+    public init(attribute: String, value: String)
+    {
+        self.attribute = attribute
+        self.value = value
+    }
 }
 
 /**
@@ -186,6 +192,13 @@ public struct Join
      `.table`'s attribute to join on
      */
     let tableTwoAttribute       : String
+    
+    public init(table: String, tOneAttribute: String, tTwoAttribute: String)
+    {
+        self.table = table
+        tableOneAttribute = tOneAttribute
+        tableTwoAttribute = tTwoAttribute
+    }
 }
 
 fileprivate struct InternalJoin
@@ -209,6 +222,12 @@ public struct OrderBy
      The direction in which to order the specified attribute
      */
     var orderBy     : MSSQLOrderBy
+    
+    public init(attribute: String, orderedBy: MSSQLOrderBy)
+    {
+        self.attribute = attribute
+        self.orderBy = orderedBy
+    }
 }
 
 /**
@@ -234,6 +253,13 @@ public struct Where
      - Note: Please use `WhereStatementComparesNullString` as the value if you plan to use `.isNull` or `isNotNull` for the equivalence
      */
     let clause      : MSSQLClause
+    
+    public init(conjunction: MSSQLConjunction, equivalence: MSSQLEquivalence, clause: MSSQLClause)
+    {
+        self.conjunction = conjunction
+        self.equivalence = equivalence
+        self.clause = clause
+    }
 }
 
 //MARK: - SQL class
@@ -929,7 +955,7 @@ public final class MSSQL
         guard orderByStatements.isEmpty else { throw MSSQLError.conditionAlreadyExists }
         try check(attribute)
         
-        orderByStatements = [OrderBy(attribute: attribute, orderBy: direction)]
+        orderByStatements = [OrderBy(attribute: attribute, orderedBy: direction)]
         return self
     }
     

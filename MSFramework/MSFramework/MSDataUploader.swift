@@ -51,8 +51,8 @@ public final class MSDataUploader: NSObject, URLSessionDelegate
         let uploadRequest = uploadSession.dataTask(with: request, completionHandler: { (returnData, response, error) -> Void in
             DispatchQueue.main.async(execute: { () -> Void in
                 
-                debugLog("Error: \(error)")
-                debugLog("Response: \(response)")
+                debugLog("Error: \(String(describing: error))")
+                debugLog("Response: \(String(describing: response))")
                 
                 guard response?.url?.absoluteString.hasPrefix(MSFrameworkManager.default.dataSource.website) == true else { completion(false); return }
                 guard error == nil && returnData != nil else { completion(false); return }

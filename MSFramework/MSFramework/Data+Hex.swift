@@ -20,7 +20,7 @@ extension String
     {
         var data = Data(capacity: characters.count / 2)
         
-        let regex = try! NSRegularExpression(pattern: "[0-9a-f]{1,2}", options: .caseInsensitive)
+        let regex = try! NSRegularExpression(pattern: "[0-9A-F]{1,2}", options: .caseInsensitive)
         regex.enumerateMatches(in: self, options: [], range: NSMakeRange(0, characters.count)) { match, flags, stop in
             let byteString = (self as NSString).substring(with: match!.range)
             var num = UInt8(byteString, radix: 16)!

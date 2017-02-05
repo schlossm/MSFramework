@@ -88,28 +88,24 @@ extension MSFrameworkManager
     public func decrypt(string: String) -> String
     {
         guard dataSource != nil else { fatalError("You must set a dataSource before querying any MSDatabase functionality.") }
-        guard dataSource.encryptionCode.count == 32 else { fatalError("The encryption code MUST be 32 characters.") }
         
-        let iv = (string as NSString).substring(to: 16)
-        guard var data = (string as NSString).substring(from: 16).hexadecimal else { return string }
+        let encryptionCode = (string as NSString).substring(to: 64)
+        let iv = (string as NSString).substring(with: NSMakeRange(64, 32))
+        guard let data = (string as NSString).substring(from: 96).hexadecimal else { return string }
         
-        
-        var decryptedData = Data(capacity: iv.characters.count / 2)
-        
-        let regex = try! NSRegularExpression(pattern: "[0-9a-f]{1,2}", options: .caseInsensitive)
-        regex.enumerateMatches(in: iv, options: [], range: NSMakeRange(0, iv.characters.count)) { match, flags, stop in
-            let byteString = (iv as NSString).substring(with: match!.range)
-            var num = UInt8(byteString, radix: 16)!
-            decryptedData.append(&num, count: 1)
-        }
-        guard decryptedData.count > 0 else
-        {
-            return ""
+        let ivChars = Array(iv.characters)
+        let convertedIV = stride(from: 0, to: ivChars.count, by: 2).map() {
+            UInt8.init(strtoul(String(ivChars[$0 ..< min($0 + 2, ivChars.count)]), nil, 16))
         }
         
-        let aes = try! AES(key: dataSource.encryptionCode, iv: decryptedData.bytes, blockMode: .CBC, padding: PKCS7())
-        data = try! Data(bytes: aes.decrypt(data.bytes))
-        return NSString(data: data, encoding: String.Encoding.ascii.rawValue)! as String
+        let encChars = Array(encryptionCode.characters)
+        let convertedEnc = stride(from: 0, to: encChars.count, by: 2).map() {
+            UInt8.init(strtoul(String(encChars[$0 ..< min($0 + 2, encChars.count)]), nil, 16))
+        }
+        
+        let aes = try! AES(key: convertedEnc, iv: convertedIV, blockMode: .CBC, padding: PKCS7())
+        let decryptedData = try! Data(bytes: aes.decrypt(data.bytes))
+        return String.init(data: decryptedData, encoding: .ascii)!
     }
     
     ///Encrypts a string using an AES 256-bit algorithm
@@ -118,11 +114,13 @@ extension MSFrameworkManager
     public func encrypt(string: String) -> String
     {
         guard dataSource != nil else { fatalError("You must set a dataSource before querying any MSDatabase functionality.") }
-        guard dataSource.encryptionCode.count == 32 else { fatalError("The encryption code MUST be 32 characters.") }
         
-        let data = string.data(using: String.Encoding.ascii)! as Data
-        let aes = try! AES(key: dataSource.encryptionCode, iv: iv, blockMode: .CBC, padding: PKCS7())
-        return try! iv.toHexString() + Data(bytes: aes.encrypt(data.bytes)).hexEncoded
+        let encryptionCode = dataSource.encryptionCode
+        guard encryptionCode.count == 32 else { fatalError("The encryption code MUST be 32 characters.") }
+        
+        let data = string.data(using: .ascii)!
+        let aes = try! AES(key: encryptionCode, iv: iv, blockMode: .CBC, padding: PKCS7())
+        return try! encryptionCode.toHexString() + iv.toHexString() + Data(bytes: aes.encrypt(data.bytes)).bytes.toHexString()
     }
     
     ///Encrypts an object using an AES 256-bit algorithm
@@ -131,15 +129,17 @@ extension MSFrameworkManager
     public func encrypt(object: Any) -> String
     {
         guard dataSource != nil else { fatalError("You must set a dataSource before querying any MSDatabase functionality.") }
-        guard dataSource.encryptionCode.count == 32 else { fatalError("The encryption code MUST be 32 characters.") }
+        
+        let encryptionCode = dataSource.encryptionCode
+        guard encryptionCode.count == 32 else { fatalError("The encryption code MUST be 32 characters.") }
         
         let data = NSMutableData()
         let archiver = NSKeyedArchiver(forWritingWith: data)
         archiver.encode(object, forKey: "object")
         archiver.finishEncoding()
         
-        let aes = try! AES(key: dataSource.encryptionCode, iv: iv, blockMode: .CBC, padding: PKCS7())
-        return try! iv.toHexString() + Data(bytes: aes.encrypt((data as Data).bytes)).hexEncoded
+        let aes = try! AES(key: encryptionCode, iv: iv, blockMode: .CBC, padding: PKCS7())
+        return try! encryptionCode.toHexString() + iv.toHexString() + Data(bytes: aes.encrypt((data as Data).bytes)).bytes.toHexString()
     }
     
     ///Decrypts an AES 256-bit encrypted object
@@ -148,28 +148,25 @@ extension MSFrameworkManager
     public func decrypt(object: String) -> Any?
     {
         guard dataSource != nil else { fatalError("You must set a dataSource before querying any MSDatabase functionality.") }
-        guard dataSource.encryptionCode.count == 32 else { fatalError("The encryption code MUST be 32 characters.") }
         
-        let iv = (object as NSString).substring(to: 16)
-        guard var data = (object as NSString).substring(from: 16).hexadecimal else { return object }
+        let encryptionCode = (object as NSString).substring(to: 64)
+        let iv = (object as NSString).substring(with: NSMakeRange(64, 32))
+        guard let data = (object as NSString).substring(from: 96).hexadecimal else { return object }
         
-        var decryptedData = Data(capacity: iv.characters.count / 2)
-        
-        let regex = try! NSRegularExpression(pattern: "[0-9a-f]{1,2}", options: .caseInsensitive)
-        regex.enumerateMatches(in: iv, options: [], range: NSMakeRange(0, iv.characters.count)) { match, flags, stop in
-            let byteString = (iv as NSString).substring(with: match!.range)
-            var num = UInt8(byteString, radix: 16)!
-            decryptedData.append(&num, count: 1)
-        }
-        guard decryptedData.count > 0 else
-        {
-            return ""
+        let ivChars = Array(iv.characters)
+        let convertedIV = stride(from: 0, to: ivChars.count, by: 2).map() {
+            UInt8.init(strtoul(String(ivChars[$0 ..< min($0 + 2, ivChars.count)]), nil, 16))
         }
         
-        let aes = try! AES(key: dataSource.encryptionCode, iv: decryptedData.bytes, blockMode: .CBC, padding: PKCS7())
-        data = try! Data(bytes: aes.decrypt(data.bytes))
+        let encChars = Array(encryptionCode.characters)
+        let convertedEnc = stride(from: 0, to: encChars.count, by: 2).map() {
+            UInt8.init(strtoul(String(encChars[$0 ..< min($0 + 2, encChars.count)]), nil, 16))
+        }
         
-        let unarchiver = NSKeyedUnarchiver(forReadingWith: data)
+        let aes = try! AES(key: convertedEnc, iv: convertedIV, blockMode: .CBC, padding: PKCS7())
+        let decrypted = try! Data(bytes: aes.decrypt(data.bytes))
+        
+        let unarchiver = NSKeyedUnarchiver(forReadingWith: decrypted)
         let object = unarchiver.decodeObject(forKey: "object")
         unarchiver.finishDecoding()
         return object
