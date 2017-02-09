@@ -1,5 +1,5 @@
 #MSFramework
-######Version 2.0
+######Version 2.1
 
 iOS Framework for pulling JSON data using `POST` from a MySQL database and storing it to CoreData
 
@@ -37,7 +37,7 @@ MSFramework requires a data source that complies with the `MSFrameworkDataSource
 
 ##SQL
 
-MSFramework has its own SQL class: `MSSQL`. This class supports all SQL `SELECT`, `SELECT INTO`, `FROM`, `JOIN`, `INSERT INTO` (no support for `INSERT INTO SELECT`), `UPDATE`, `ORDER BY`, `LIMIT`, and `WHERE` combinations.  `MSSQL` also supports all of the SQL functions.  This class is overload and security safe, and will automatically sanitize its input, throwing catchable errors when it encounters illegal text. MSFramework uses this class for processing SQL queries up to a database.
+MSFramework has its own SQL class: `MSSQL`. This class supports all SQL `SELECT`, `SELECT INTO`, `FROM`, `JOIN`, `INSERT INTO` (no support for `INSERT INTO SELECT`), `UPDATE`, `DELETE FROM`, `ORDER BY`, `LIMIT`, and `WHERE` combinations.  `MSSQL` also supports all of the SQL functions.  This class is overload and security safe, and will automatically sanitize its input, throwing catchable errors when it encounters illegal text. MSFramework uses this class for processing SQL queries up to a database.
 
 See the `MSSQL` class for more info.
 
@@ -85,5 +85,4 @@ MSFramework has several variables that must be implemented when complying with `
 * `websiteUserPass`: The password to log into a protected directory.  This value is only used if needed.
 * `databaseUserPass`: MySQL databases require user login and password to access the databse schema.  MSFramework assumes the login `websiteUserName` combined with this password
 * `coreDataModelName`: The file name of your project's CoreData model
-* `encryptionCode`: A String containing 32 characters ([A-Za-z0-9] & special characters) that is used to encrypt and decrypt data on device
-* `iv`: The initialization vector for MSFramework's encryption
+* `encryptionCode`: An array of UInt8 that is 32 in length.  Can be changing or static, MSFramework will encrypt and decrypt accordingly.

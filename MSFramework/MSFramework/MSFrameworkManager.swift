@@ -45,12 +45,15 @@ public final class MSFrameworkManager : NSObject
         {
         didSet
         {
+            encryptionCodeIsChanging = dataSource.encryptionCode != dataSource.encryptionCode
             if dataSource.coreDataModelName != ""
             {
                 msCoreDataStack.load()
             }
         }
     }
+    
+    fileprivate var encryptionCodeIsChanging = false
     
     
     ///MSFramework's current NSManagedObjectContext object.  Returns nil if the Persistent Store hasn't finished loading yet
@@ -88,6 +91,7 @@ extension MSFrameworkManager
     public func decrypt(string: String) -> String
     {
         guard dataSource != nil else { fatalError("You must set a dataSource before querying any MSDatabase functionality.") }
+        guard dataSource.encryptionCode.count == 32 else { fatalError("The encryption code must have a length of 32") }
         
         let encryptionCode = (string as NSString).substring(to: 64)
         let iv = (string as NSString).substring(with: NSMakeRange(64, 32))
@@ -99,9 +103,9 @@ extension MSFrameworkManager
         }
         
         let encChars = Array(encryptionCode.characters)
-        let convertedEnc = stride(from: 0, to: encChars.count, by: 2).map() {
+        let convertedEnc = encryptionCodeIsChanging ? (stride(from: 0, to: encChars.count, by: 2).map() {
             UInt8.init(strtoul(String(encChars[$0 ..< min($0 + 2, encChars.count)]), nil, 16))
-        }
+        }) : dataSource.encryptionCode
         
         let aes = try! AES(key: convertedEnc, iv: convertedIV, blockMode: .CBC, padding: PKCS7())
         let decryptedData = try! Data(bytes: aes.decrypt(data.bytes))
@@ -120,7 +124,7 @@ extension MSFrameworkManager
         
         let data = string.data(using: .ascii)!
         let aes = try! AES(key: encryptionCode, iv: iv, blockMode: .CBC, padding: PKCS7())
-        return try! encryptionCode.toHexString() + iv.toHexString() + Data(bytes: aes.encrypt(data.bytes)).bytes.toHexString()
+        return try! (encryptionCodeIsChanging ? encryptionCode.toHexString() : "") + iv.toHexString() + Data(bytes: aes.encrypt(data.bytes)).bytes.toHexString()
     }
     
     ///Encrypts an object using an AES 256-bit algorithm
@@ -139,7 +143,7 @@ extension MSFrameworkManager
         archiver.finishEncoding()
         
         let aes = try! AES(key: encryptionCode, iv: iv, blockMode: .CBC, padding: PKCS7())
-        return try! encryptionCode.toHexString() + iv.toHexString() + Data(bytes: aes.encrypt((data as Data).bytes)).bytes.toHexString()
+        return try! (encryptionCodeIsChanging ? encryptionCode.toHexString() : "") + iv.toHexString() + Data(bytes: aes.encrypt((data as Data).bytes)).bytes.toHexString()
     }
     
     ///Decrypts an AES 256-bit encrypted object
@@ -159,9 +163,9 @@ extension MSFrameworkManager
         }
         
         let encChars = Array(encryptionCode.characters)
-        let convertedEnc = stride(from: 0, to: encChars.count, by: 2).map() {
+        let convertedEnc = encryptionCodeIsChanging ? (stride(from: 0, to: encChars.count, by: 2).map() {
             UInt8.init(strtoul(String(encChars[$0 ..< min($0 + 2, encChars.count)]), nil, 16))
-        }
+        }) : dataSource.encryptionCode
         
         let aes = try! AES(key: convertedEnc, iv: convertedIV, blockMode: .CBC, padding: PKCS7())
         let decrypted = try! Data(bytes: aes.decrypt(data.bytes))

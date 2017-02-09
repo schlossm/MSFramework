@@ -271,6 +271,7 @@ public final class MSSQL
     private     var intoTable           = ""
     private     var inDB                = ""
     
+    internal    var deleteFromTable     = ""
     internal    var fromTables          = [String]()
     private     var joinStatements      = [InternalJoin]()
     private     var whereStatements     = [Where]()
@@ -394,6 +395,17 @@ public final class MSSQL
             insertAppendedStatements()
         }
         
+        //DELETE FROM Statements
+        if deleteFromTable.isEmpty == false
+        {
+            guard whereStatements.count == 1 else { return returnString }
+            
+            returnString = "DELETE FROM `\(deleteFromTable)`"
+            insertWhereAndOrderByStatements()
+            returnString += ";"
+            return returnString
+        }
+        
         //UPDATE statements
         if updateStatements.isEmpty == false
         {
@@ -419,8 +431,6 @@ public final class MSSQL
             insertWhereAndOrderByStatements()
             
             returnString += ";"
-            
-            //insertAppendedStatements()
             
             return returnString
         }
@@ -518,8 +528,6 @@ public final class MSSQL
         insertLimit()
         
         returnString += ";"
-        
-        //insertAppendedStatements()
         
         return returnString
     }
@@ -794,6 +802,21 @@ public final class MSSQL
         
         duplicateKeys = attributes
         duplicateValues = values
+        
+        return self
+    }
+    
+    //MARK: DELETE FROM Constructor
+    
+    public func delete(from: String, `where`: Where) throws -> MSSQL
+    {
+        guard deleteFromTable == "" else { throw MSSQLError.conditionAlreadyExists }
+        
+        try check(`where`.clause.attribute)
+        try check(value: `where`.clause.value)
+        
+        deleteFromTable = from
+        whereStatements = [`where`]
         
         return self
     }
