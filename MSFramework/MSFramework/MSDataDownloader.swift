@@ -50,7 +50,7 @@ public final class MSDataDownloader: NSObject, URLSessionDelegate, URLSessionTas
                 debugLog("Response: \(String(describing: response))")
                 debugLog("Error: \(String(describing: error))")
                 
-                guard response?.url?.absoluteString.hasPrefix(MSFrameworkManager.default.dataSource.website) == true else { completion(nil, NSError(domain: "com.Michael-Schloss.MSFramework.InvalidRedirect", code: 4, userInfo: nil)); return }
+                guard response?.url?.absoluteString.hasPrefix(MSFrameworkManager.default.dataSource.website) == true else { completion(nil, NSError(domain: "com.Michael-Schloss.MSFramework.InvalidRedirect", code: 4, userInfo: ["website": response?.url?.absoluteString ?? "null"])); return }
                 
                 guard error == nil else { completion(nil, error); return }
                 

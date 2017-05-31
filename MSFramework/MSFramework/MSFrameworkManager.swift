@@ -42,7 +42,7 @@ public final class MSFrameworkManager : NSObject
     
     ///The data source for `MSDatabase` contains all necessary information for MSFramework to communicate with your application's web service
     public var dataSource : MSFrameworkDataSource!
-        {
+    {
         didSet
         {
             encryptionCodeIsChanging = dataSource.encryptionCode != dataSource.encryptionCode
@@ -93,23 +93,41 @@ extension MSFrameworkManager
         guard dataSource != nil else { fatalError("You must set a dataSource before querying any MSDatabase functionality.") }
         guard dataSource.encryptionCode.count == 32 else { fatalError("The encryption code must have a length of 32") }
         
-        let encryptionCode = (string as NSString).substring(to: 64)
-        let iv = (string as NSString).substring(with: NSMakeRange(64, 32))
-        guard let data = (string as NSString).substring(from: 96).hexadecimal else { return string }
-        
-        let ivChars = Array(iv.characters)
-        let convertedIV = stride(from: 0, to: ivChars.count, by: 2).map() {
-            UInt8.init(strtoul(String(ivChars[$0 ..< min($0 + 2, ivChars.count)]), nil, 16))
+        if (encryptionCodeIsChanging == true)
+        {
+            let encryptionCode = (string as NSString).substring(to: 64)
+            let iv = (string as NSString).substring(with: NSMakeRange(64, 32))
+            guard let data = (string as NSString).substring(from: 96).hexadecimal else { return string }
+            
+            let ivChars = Array(iv.characters)
+            let convertedIV = stride(from: 0, to: ivChars.count, by: 2).map() {
+                UInt8.init(strtoul(String(ivChars[$0 ..< min($0 + 2, ivChars.count)]), nil, 16))
+            }
+            
+            let encChars = Array(encryptionCode.characters)
+            let convertedEnc = encryptionCodeIsChanging ? (stride(from: 0, to: encChars.count, by: 2).map() {
+                UInt8.init(strtoul(String(encChars[$0 ..< min($0 + 2, encChars.count)]), nil, 16))
+            }) : dataSource.encryptionCode
+            
+            let aes = try! AES(key: convertedEnc, iv: convertedIV, blockMode: .CBC, padding: PKCS7())
+            let decryptedData = try! Data(bytes: aes.decrypt(data.bytes))
+            return String.init(data: decryptedData, encoding: .ascii)!
         }
-        
-        let encChars = Array(encryptionCode.characters)
-        let convertedEnc = encryptionCodeIsChanging ? (stride(from: 0, to: encChars.count, by: 2).map() {
-            UInt8.init(strtoul(String(encChars[$0 ..< min($0 + 2, encChars.count)]), nil, 16))
-        }) : dataSource.encryptionCode
-        
-        let aes = try! AES(key: convertedEnc, iv: convertedIV, blockMode: .CBC, padding: PKCS7())
-        let decryptedData = try! Data(bytes: aes.decrypt(data.bytes))
-        return String.init(data: decryptedData, encoding: .ascii)!
+        else
+        {
+            let iv = (string as NSString).substring(with: NSMakeRange(0, 32))
+            
+            guard let data = (string as NSString).substring(from: 32).hexadecimal else { return string }
+            
+            let ivChars = Array(iv.characters)
+            let convertedIV = stride(from: 0, to: ivChars.count, by: 2).map() {
+                UInt8.init(strtoul(String(ivChars[$0 ..< min($0 + 2, ivChars.count)]), nil, 16))
+            }
+            
+            let aes = try! AES(key: dataSource.encryptionCode, iv: convertedIV, blockMode: .CBC, padding: PKCS7())
+            let decryptedData = try! Data(bytes: aes.decrypt(data.bytes))
+            return String.init(data: decryptedData, encoding: .ascii)!
+        }
     }
     
     ///Encrypts a string using an AES 256-bit algorithm
@@ -153,27 +171,48 @@ extension MSFrameworkManager
     {
         guard dataSource != nil else { fatalError("You must set a dataSource before querying any MSDatabase functionality.") }
         
-        let encryptionCode = (object as NSString).substring(to: 64)
-        let iv = (object as NSString).substring(with: NSMakeRange(64, 32))
-        guard let data = (object as NSString).substring(from: 96).hexadecimal else { return object }
-        
-        let ivChars = Array(iv.characters)
-        let convertedIV = stride(from: 0, to: ivChars.count, by: 2).map() {
-            UInt8.init(strtoul(String(ivChars[$0 ..< min($0 + 2, ivChars.count)]), nil, 16))
+        if (encryptionCodeIsChanging == true)
+        {
+            let encryptionCode = (object as NSString).substring(to: 64)
+            let iv = (object as NSString).substring(with: NSMakeRange(64, 32))
+            guard let data = (object as NSString).substring(from: 96).hexadecimal else { return object }
+            
+            let ivChars = Array(iv.characters)
+            let convertedIV = stride(from: 0, to: ivChars.count, by: 2).map() {
+                UInt8.init(strtoul(String(ivChars[$0 ..< min($0 + 2, ivChars.count)]), nil, 16))
+            }
+            
+            let encChars = Array(encryptionCode.characters)
+            let convertedEnc = encryptionCodeIsChanging ? (stride(from: 0, to: encChars.count, by: 2).map() {
+                UInt8.init(strtoul(String(encChars[$0 ..< min($0 + 2, encChars.count)]), nil, 16))
+            }) : dataSource.encryptionCode
+            
+            let aes = try! AES(key: convertedEnc, iv: convertedIV, blockMode: .CBC, padding: PKCS7())
+            let decrypted = try! Data(bytes: aes.decrypt(data.bytes))
+            
+            let unarchiver = NSKeyedUnarchiver(forReadingWith: decrypted)
+            let object = unarchiver.decodeObject(forKey: "object")
+            unarchiver.finishDecoding()
+            return object
         }
-        
-        let encChars = Array(encryptionCode.characters)
-        let convertedEnc = encryptionCodeIsChanging ? (stride(from: 0, to: encChars.count, by: 2).map() {
-            UInt8.init(strtoul(String(encChars[$0 ..< min($0 + 2, encChars.count)]), nil, 16))
-        }) : dataSource.encryptionCode
-        
-        let aes = try! AES(key: convertedEnc, iv: convertedIV, blockMode: .CBC, padding: PKCS7())
-        let decrypted = try! Data(bytes: aes.decrypt(data.bytes))
-        
-        let unarchiver = NSKeyedUnarchiver(forReadingWith: decrypted)
-        let object = unarchiver.decodeObject(forKey: "object")
-        unarchiver.finishDecoding()
-        return object
+        else
+        {
+            let iv = (object as NSString).substring(with: NSMakeRange(0, 32))
+            guard let data = (object as NSString).substring(from: 32).hexadecimal else { return object }
+            
+            let ivChars = Array(iv.characters)
+            let convertedIV = stride(from: 0, to: ivChars.count, by: 2).map() {
+                UInt8.init(strtoul(String(ivChars[$0 ..< min($0 + 2, ivChars.count)]), nil, 16))
+            }
+            
+            let aes = try! AES(key: dataSource.encryptionCode, iv: convertedIV, blockMode: .CBC, padding: PKCS7())
+            let decrypted = try! Data(bytes: aes.decrypt(data.bytes))
+            
+            let unarchiver = NSKeyedUnarchiver(forReadingWith: decrypted)
+            let object = unarchiver.decodeObject(forKey: "object")
+            unarchiver.finishDecoding()
+            return object
+        }
     }
 }
 
