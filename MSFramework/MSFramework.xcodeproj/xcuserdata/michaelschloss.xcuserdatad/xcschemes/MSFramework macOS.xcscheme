@@ -14,9 +14,9 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "10166D1D1E101C6B00627A76"
+               BlueprintIdentifier = "10C97A4C1F780F4D00EA3C34"
                BuildableName = "MSFramework.framework"
-               BlueprintName = "MSFramework iOS"
+               BlueprintName = "MSFramework macOS"
                ReferencedContainer = "container:MSFramework.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
@@ -47,9 +47,9 @@
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "10166D1D1E101C6B00627A76"
+            BlueprintIdentifier = "10C97A4C1F780F4D00EA3C34"
             BuildableName = "MSFramework.framework"
-            BlueprintName = "MSFramework iOS"
+            BlueprintName = "MSFramework macOS"
             ReferencedContainer = "container:MSFramework.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
@@ -65,9 +65,9 @@
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "10166D1D1E101C6B00627A76"
+            BlueprintIdentifier = "10C97A4C1F780F4D00EA3C34"
             BuildableName = "MSFramework.framework"
-            BlueprintName = "MSFramework iOS"
+            BlueprintName = "MSFramework macOS"
             ReferencedContainer = "container:MSFramework.xcodeproj">
          </BuildableReference>
       </MacroExpansion>

@@ -4,15 +4,53 @@
 <dict>
 	<key>SchemeUserState</key>
 	<dict>
+		<key>MSFramework macOS.xcscheme</key>
+		<dict>
+			<key>isShown</key>
+			<false/>
+			<key>orderHint</key>
+			<integer>13</integer>
+		</dict>
+		<key>MSFramework tvOS.xcscheme</key>
+		<dict>
+			<key>isShown</key>
+			<false/>
+			<key>orderHint</key>
+			<integer>11</integer>
+		</dict>
+		<key>MSFramework watchOS.xcscheme</key>
+		<dict>
+			<key>isShown</key>
+			<false/>
+			<key>orderHint</key>
+			<integer>12</integer>
+		</dict>
 		<key>MSFramework.xcscheme</key>
 		<dict>
+			<key>isShown</key>
+			<false/>
 			<key>orderHint</key>
-			<integer>0</integer>
+			<integer>1</integer>
 		</dict>
 	</dict>
 	<key>SuppressBuildableAutocreation</key>
 	<dict>
 		<key>10166D1D1E101C6B00627A76</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>10C97A321F780EE000EA3C34</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>10C97A3F1F780F3100EA3C34</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>10C97A4C1F780F4D00EA3C34</key>
 		<dict>
 			<key>primary</key>
 			<true/>
