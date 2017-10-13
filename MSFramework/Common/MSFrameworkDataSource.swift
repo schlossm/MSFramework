@@ -93,6 +93,13 @@ public protocol MSFrameworkDataSource
      */
     var createUserFile : String { get }
     
+    /**
+     The relative path to a file in the URL that takes a `POST` object containing the given custom key-values.
+     
+     This file should take in the custom parameters provided
+     */
+    var customKeyValuesFile : String { get }
+    
     ///Used to encrypt and decrypt data on device
     var encryptionCode : Array<UInt8> { get }
     

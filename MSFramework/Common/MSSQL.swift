@@ -425,7 +425,7 @@ public final class MSSQL
                 returnString += left + "=" + right + ", "
             }
             
-            returnString = (returnString as NSString).substring(to: returnString.characters.count - 2)
+            returnString = (returnString as NSString).substring(to: returnString.count - 2)
             
             insertWhereAndOrderByStatements()
             
@@ -445,7 +445,7 @@ public final class MSSQL
                 returnString += "`" + row + "`,"
             }
             
-            returnString = (returnString as NSString).substring(to: returnString.characters.count - 1) + ") VALUES ("
+            returnString = (returnString as NSString).substring(to: returnString.count - 1) + ") VALUES ("
             
             for value in insertValues
             {
@@ -459,7 +459,7 @@ public final class MSSQL
                 }
             }
             
-            returnString = (returnString as NSString).substring(to: returnString.characters.count - 1) + ")"
+            returnString = (returnString as NSString).substring(to: returnString.count - 1) + ")"
             
             if duplicateKeys.isEmpty == false
             {
@@ -469,7 +469,7 @@ public final class MSSQL
                     returnString += "`" + row + "`='\(duplicateValues[duplicateKeys.index(of: row)!])',"
                 }
                 
-                returnString = (returnString as NSString).substring(to: returnString.characters.count - 1)
+                returnString = (returnString as NSString).substring(to: returnString.count - 1)
             }
             
             returnString += ";"
@@ -498,14 +498,14 @@ public final class MSSQL
             }
         }
         
-        returnString = (returnString as NSString).substring(to: returnString.characters.count - 1) + " FROM "
+        returnString = (returnString as NSString).substring(to: returnString.count - 1) + " FROM "
         
         for table in fromTables
         {
             returnString += "`" + table + "`,"
         }
         
-        returnString = (returnString as NSString).substring(to: returnString.characters.count - 1)
+        returnString = (returnString as NSString).substring(to: returnString.count - 1)
         
         if joinStatements.isEmpty == false
         {
@@ -539,7 +539,7 @@ public final class MSSQL
         switch attribute.contains(".")
         {
         case false:
-            if attribute.characters.count > 64  { throw MSSQLError.attributeLengthTooLong }
+            if attribute.count > 64  { throw MSSQLError.attributeLengthTooLong }
             
         case true:
             let components = attribute.components(separatedBy: ".")
@@ -548,14 +548,14 @@ public final class MSSQL
             
             if table.contains("`")
             {
-                if table.characters.count > 66  { throw MSSQLError.attributeLengthTooLong }
+                if table.count > 66  { throw MSSQLError.attributeLengthTooLong }
             }
             else
             {
-                if table.characters.count > 64  { throw MSSQLError.attributeLengthTooLong }
+                if table.count > 64  { throw MSSQLError.attributeLengthTooLong }
             }
             
-            if row.characters.count > 64  { throw MSSQLError.attributeLengthTooLong }
+            if row.count > 64  { throw MSSQLError.attributeLengthTooLong }
         }
     }
     

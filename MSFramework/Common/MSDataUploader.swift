@@ -64,6 +64,48 @@ public final class MSDataUploader: NSObject, URLSessionDelegate
         }).resume()
     }
     
+    public func upload(customPOSTQueries: [String: String], completion: MSFrameworkUploadCompletion? = nil)
+    {
+        guard let dataSource =  MSFrameworkManager.default.dataSource else { fatalError("You must set a dataSource before querying any MSDatabase functionality.") }
+        let url = URL(string: dataSource.website)!.appendingPathComponent(dataSource.customKeyValuesFile)
+        
+        var customParameters = ""
+        for (key, value) in customPOSTQueries
+        {
+            customParameters += "\(key)=\(value)&"
+        }
+        customParameters = String(customParameters[customParameters.startIndex..<customParameters.index(before: customParameters.endIndex)])
+        
+        let postString = customParameters
+        if MSFrameworkManager.debug { print(postString) }
+        let postData = postString.data(using: .ascii, allowLossyConversion: true)
+        let postLength = String(postData!.count)
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue(postLength, forHTTPHeaderField: "Content-Length")
+        request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField:"Content-Type")
+        request.httpBody = postData
+        
+        uploadSession.dataTask(with: request, completionHandler: { returnData, response, error in
+            DispatchQueue.main.async {
+                if let error = error
+                {
+                    print(error)
+                    completion?(false)
+                    return
+                }
+                if MSFrameworkManager.debug { print("Response: \(String(describing: response))") }
+                guard response?.url?.absoluteString.hasPrefix(dataSource.website) == true else
+                {
+                    completion?(false)
+                    return
+                }
+                completion?(true)
+            }
+        }).resume()
+    }
+    
     /**
      Uploads an SQL statement to `website`+`writeFile`.
      
