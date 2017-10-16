@@ -30,7 +30,7 @@ public final class MSDataDownloader: NSObject, URLSessionDelegate, URLSessionTas
         
         let postString = "Password=\(dataSource.databaseUserPass)&Username=\(dataSource.websiteUserName)&SQLQuery=\(sqlStatement.formattedStatement.addingPercentEncoding(withAllowedCharacters: CharacterSet.alphanumerics) ?? "")"
         if MSFrameworkManager.debug { print(postString) }
-        let postData = postString.data(using: .ascii, allowLossyConversion: true)
+        let postData = postString.data(using: .utf8, allowLossyConversion: true)
         let postLength = String(postData!.count)
         
         var request = URLRequest(url: url)
@@ -59,7 +59,7 @@ public final class MSDataDownloader: NSObject, URLSessionDelegate, URLSessionTas
                     completion?(nil, NSError(domain: "com.Michael-Schloss.MSFramework.NoReturnData", code: 2, userInfo: nil))
                     return
                 }
-                guard let stringData = String(data: returnData, encoding: .ascii) else
+                guard let stringData = String(data: returnData, encoding: .utf8) else
                 {
                     completion?(nil, NSError(domain: "com.Michael-Schloss.MSFramework.UnconvertableStringData", code: 3, userInfo: nil))
                     return

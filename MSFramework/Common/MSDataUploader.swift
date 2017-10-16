@@ -23,9 +23,9 @@ public final class MSDataUploader: NSObject, URLSessionDelegate
         guard let dataSource = MSFrameworkManager.default.dataSource else { fatalError("You must set a dataSource before querying any MSDatabase functionality.") }
         let url = URL(string: dataSource.website)!.appendingPathComponent(dataSource.createUserFile)
         
-        let postString = "Password=\(dataSource.databaseUserPass)&Username=\(dataSource.websiteUserName)&Email=\(email)&SQLQuery=\(sqlStatement.formattedStatement.addingPercentEncoding(withAllowedCharacters: CharacterSet.alphanumerics) ?? "")"
+        let postString = "Password=\(dataSource.databaseUserPass)&Username=\(dataSource.websiteUserName)&Email=\(email)&SQLQuery=\(sqlStatement.formattedStatement.addingPercentEncoding(withAllowedCharacters: .alphanumerics) ?? "")"
         if MSFrameworkManager.debug { print(postString) }
-        let postData = postString.data(using: .ascii, allowLossyConversion: true)
+        let postData = postString.data(using: .utf8, allowLossyConversion: true)
         let postLength = String(postData!.count)
         
         var request = URLRequest(url: url)
@@ -42,11 +42,8 @@ public final class MSDataUploader: NSObject, URLSessionDelegate
                     completion?(nil)
                     return
                 }
-                if MSFrameworkManager.debug
-                {
-                    print("Response: \(String(describing: response))")
-                }
-                guard response?.url?.absoluteString.hasPrefix(dataSource.website) == true, let returnData = returnData, let stringData = String(data: returnData, encoding: .ascii) else
+                if MSFrameworkManager.debug { print("Response: \(String(describing: response))") }
+                guard response?.url?.absoluteString.hasPrefix(dataSource.website) == true, let returnData = returnData, let stringData = String(data: returnData, encoding: .utf8) else
                 {
                     completion?(nil)
                     return
@@ -78,7 +75,7 @@ public final class MSDataUploader: NSObject, URLSessionDelegate
         
         let postString = customParameters
         if MSFrameworkManager.debug { print(postString) }
-        let postData = postString.data(using: .ascii, allowLossyConversion: true)
+        let postData = postString.data(using: .utf8, allowLossyConversion: true)
         let postLength = String(postData!.count)
         
         var request = URLRequest(url: url)
@@ -122,7 +119,7 @@ public final class MSDataUploader: NSObject, URLSessionDelegate
         
         let postString = "Password=\(dataSource.databaseUserPass)&Username=\(dataSource.websiteUserName)&SQLQuery=\(sqlStatement.formattedStatement.addingPercentEncoding(withAllowedCharacters: CharacterSet.alphanumerics) ?? "")"
         if MSFrameworkManager.debug { print(postString) }
-        let postData = postString.data(using: .ascii, allowLossyConversion: true)
+        let postData = postString.data(using: .utf8, allowLossyConversion: true)
         let postLength = String(postData!.count)
         
         var request = URLRequest(url: url)
@@ -140,7 +137,7 @@ public final class MSDataUploader: NSObject, URLSessionDelegate
                     return
                 }
                 if MSFrameworkManager.debug { print("Response: \(String(describing: response))") }
-                guard response?.url?.absoluteString.hasPrefix(dataSource.website) == true, let returnData = returnData, let stringData = String(data: returnData, encoding: .ascii) else
+                guard response?.url?.absoluteString.hasPrefix(dataSource.website) == true, let returnData = returnData, let stringData = String(data: returnData, encoding: .utf8) else
                 {
                     completion?(false)
                     return
